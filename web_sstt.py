@@ -122,6 +122,7 @@ def main():
 
         """ Funcionalidad a realizar
         * Crea un socket TCP (SOCK_STREAM)
+        
         * Permite reusar la misma dirección previamente vinculada a otro proceso. Debe ir antes de sock.bind
         * Vinculamos el socket a una IP y puerto elegidos
 
