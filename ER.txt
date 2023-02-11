@@ -1,0 +1,4 @@
+Tener en cuenta que no sé si es \\r\\n o \r\n
+Separar peticion, cabeceras y datos: (?P<peticion>.*?)\r\n(?P<cabeceras>.*?)\r\n\r\n(?P<cuerpo>.*)
+Separar cabeceras: (?P<cabecera>.*?): (?P<valor>.*?)\r\n
+Obtener email formulario: email=(.*?)&

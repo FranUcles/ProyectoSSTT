@@ -34,7 +34,9 @@ def enviar_mensaje(cs, data):
     """ Esta función envía datos (data) a través del socket cs
         Devuelve el número de bytes enviados.
     """
-    pass
+    data_encoded = data.encode()
+    sent_bytes = cs.send(data_encoded)
+    return sent_bytes
 
 
 def recibir_mensaje(cs):
@@ -47,7 +49,7 @@ def recibir_mensaje(cs):
 def cerrar_conexion(cs):
     """ Esta función cierra una conexión activa.
     """
-    pass
+    cs.close()
 
 
 def process_cookies(headers,  cs):
@@ -111,7 +113,7 @@ def main():
         parser.add_argument("-wb", "--webroot", help="Directorio base desde donde se sirven los ficheros (p.ej. /home/user/mi_web)")
         parser.add_argument('--verbose', '-v', action='store_true', help='Incluir mensajes de depuración en la salida')
         args = parser.parse_args()
-
+        print(args.host, args.port)
 
         if args.verbose:
             logger.setLevel(logging.DEBUG)
@@ -120,16 +122,28 @@ def main():
 
         logger.info("Serving files from {}".format(args.webroot))
 
+        server_socket = socket.socket(family=socket.AF_INET, type=socket.SOCK_STREAM, proto=0)
+        server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR)
+        server_socket.bind((args.host, args.port))
+        server_socket.listen()
+        while(True):
+            (client_socket, client_addr) = server_socket.accept()
+            logger.info('Accepting connection from {} address'.format(client_addr))
+            child_pid = os.fork()
+            if child_pid == -1:
+                logger.info('No child created')
+            elif child_pid == 0:
+                cerrar_conexion(server_socket)
+                logger.info('Processing message from {}'.format(client_addr))
+                process_web_request(client_socket, args.webroot)
+            else:
+                cerrar_conexion(client_socket)
         """ Funcionalidad a realizar
         * Crea un socket TCP (SOCK_STREAM)
         
         * Permite reusar la misma dirección previamente vinculada a otro proceso. Debe ir antes de sock.bind
         * Vinculamos el socket a una IP y puerto elegidos
         
-        
-        
-        
-
         * Escucha conexiones entrantes
 
         * Bucle infinito para mantener el servidor activo indefinidamente
