@@ -54,12 +54,27 @@ def cerrar_conexion(cs):
 
 def process_cookies(headers,  cs):
     """ Esta función procesa la cookie cookie_counter
-        1. Se analizan las cabeceras en headers para buscar la cabecera Cookie
+        1   
         2. Una vez encontrada una cabecera Cookie se comprueba si el valor es cookie_counter
         3. Si no se encuentra cookie_counter , se devuelve 1
         4. Si se encuentra y tiene el valor MAX_ACCESSOS se devuelve MAX_ACCESOS
         5. Si se encuentra y tiene un valor 1 <= x < MAX_ACCESOS se incrementa en 1 y se devuelve el valor
     """
+    pass
+
+
+def split_message(message):
+    """Esta función separa la linea de petición de las cabeceras del cuerpo"""
+    pass
+
+
+def is_HTTP_correct(peticion):
+    """Comprueba si la peticion HTTP es correcta"""
+    pass
+
+
+def split_headers(headers):
+    """Guardamos en un diccionario el par: (cabecera, valor de la cabecera)"""
     pass
 
 
@@ -98,6 +113,25 @@ def process_web_request(cs, webroot):
             * Si es por timeout, se cierra el socket tras el período de persistencia.
                 * NOTA: Si hay algún error, enviar una respuesta de error con una pequeña página HTML que informe del error.
     """
+    while (True):
+        (rlist, wlist, xlist) = cs.select([cs],[],[], TIMEOUT_CONNECTION)
+        if not rlist:
+            cerrar_conexion(cs)
+            sys.exit()
+        else:
+            """Pasan las cositas del bucle principal"""
+            datos = recibir_mensaje(cs)
+            (linea_peticion, headers, body) = split_message(datos)
+            if not is_HTTP_correct(linea_peticion):
+                """Enviar página HTML con el error, contruir un mensaje"""
+                continue
+            if not is_GET(linea_peticion):
+                """Enviar un 405"""
+                continue
+            """No sabemos si aquí por eficiencia o arriba"""
+            cabeceras = split_headers(headers) 
+            pass
+        pass
 
 
 def main():
