@@ -49,8 +49,6 @@ def recibir_mensaje(cs):
     """
     datos_rcv = cs.recv(BUFSIZE)                            # Lee los datos que se encuentran en el socket
     return datos_rcv.decode                                 # Devolvemos los datos recibidos del socket convertidos a string
-    
-    # pass                                                  # Se utiliza cuando las funciones están vacías para que no de errores
 
 
 def cerrar_conexion(cs):
@@ -214,7 +212,6 @@ def main():
     """
 
     try:
-
         # Argument parser para obtener la ip y puerto de los parámetros de ejecución del programa. IP por defecto 0.0.0.0
         parser = argparse.ArgumentParser()
         parser.add_argument("-p", "--port", help="Puerto del servidor", type=int, required=True)
@@ -223,112 +220,29 @@ def main():
         parser.add_argument('--verbose', '-v', action='store_true', help='Incluir mensajes de depuración en la salida')
         args = parser.parse_args()
         print(args.host, args.port)
-
         if args.verbose:
             logger.setLevel(logging.DEBUG)
-
         logger.info('Enabling server in address {} and port {}.'.format(args.host, args.port))
-
         logger.info("Serving files from {}".format(args.webroot))
-
-        server_socket = socket.socket(family=socket.AF_INET, type=socket.SOCK_STREAM, proto=0)
-        server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR)
-        server_socket.bind((args.host, args.port))
-        server_socket.listen()
-        while(True):
-            (client_socket, client_addr) = server_socket.accept()
-            logger.info('Accepting connection from {} address'.format(client_addr))
-            child_pid = os.fork()
-            if child_pid == -1:
-                logger.info('No child created')
-            elif child_pid == 0:
-                cerrar_conexion(server_socket)
-                logger.info('Processing message from {}'.format(client_addr))
-                process_web_request(client_socket, args.webroot)
-            else:
-                cerrar_conexion(client_socket)
-        """ Funcionalidad a realizar
-        * Crea un socket TCP (SOCK_STREAM)
-        
-        * Permite reusar la misma dirección previamente vinculada a otro proceso. Debe ir antes de sock.bind
-        * Vinculamos el socket a una IP y puerto elegidos
-        
-        * Escucha conexiones entrantes
-
-        * Bucle infinito para mantener el servidor activo indefinidamente
-            - Aceptamos la conexión
-
-            - Creamos un proceso hijo
-
-            - Si es el proceso hijo se cierra el socket del padre y procesar la petición con process_web_request()
-
-            - Si es el proceso padre cerrar el socket que gestiona el hijo.
-        """
-                
-        # Si usamos una estructura with, podemos tener una estructura similar a un try, catch, finally: hay cierto código que se ejecutará siempre
-        # independientemente de lo que ocurra, incluso si se produce una excepción. En el caso concreto de un socket, podríamos evitar tener que cerrarlo
-        # la estructura with lo haría por nosotros
-        # Un ejemplo de uso es:
-        """
-            with socket.socket(socket.AF_INET, socket.SOCK_STREAM, proto = 0) as sock:           
-                sock.bind((args.host, args.port))  
-                sock.listen()
-                
-                conn, addr = sock.accept()
-                
-                print(f"Connected by {addr}")           # La opción f dentro del print permite escribir variables dentro de una cadena de una forma más cómoda
-            
-                while (True):
-                    data = conn.recv(BUFSIZE)
-                    
-                    if not data:
-                        break
-                        
-                    conn.sendall(data) 
-        """
-        
-        # family = AF_INET -> Socket de internet ipv4
-        # type = SOCK_STREAM -> Socket TCP
-        # proto = 0 -> Para las tareas que necesitaremos
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM, proto = 0)           # Creamos el socket  
-        
-        # Podemos dar un valor a las opciones del socket, pero estas deben asignarse siempre antes de hacer el .bind, es decir, antes de enlazar el socket a un
-        # puerto y una dirección IP. En nuestro caso, vamos a usar la opción socket.SO_REUSEADDR para permitir reusar una dirección IP que previamente fue
-        # asignada a otro proceso. Esto es: cuando un servidor cierra una conexión, deja de poder ser utilizado el puerto de la conexión durandte un tiempo 
-        # (2 o más minutos, depende del SO), para asegurar que los paquetes retrasados no se entregan a aplicaciones incorrectas. Sin embargo, esto se puede
-        # obviar usando esta opción, permitiendo una nueva conexión en ese puerto de forma instantánea.
-        sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)         
-                   
-        status = sock.bind((args.host, args.port))                                             # Vinculamos el socket al par (ip, puerto) adecuado
-        
-        # Comprobamos si hubo un error al tratar de enlazar el socke a un par (ip, puerto) concreto
-        if (status == -1):
-            logging.error("Error al tratar de establecer la conexión")
-            sys.exit(1)                                                                        # Finalizamos el programa con un error
-        
-        sock.listen()                                                                          # Ponemos el socket a escuchar conexiones entrantes
-        
-        # Creamos un bucle infinito para estar escuchando de forma indefinida 
-        while (True):
-            # Destacar que el .accept es bloqueante, es decir, no avanzamos hasta recibir una conexión
-            (conn, addr) = sock.accept()                                                       # Aceptamos una conexión y devolvemos: 
-                                                                                               # conn = socket nuevo que se usará para recibir los datos del 
-                                                                                               #        cliente en esta nueva conexión
-                                                                                               # addr = dirección del cliente que se ha conectado
-            
-            # Por tanto, es importante distiguir que: conn es el socket de comunicación con un cliente y sock es el socket para escuchar conexiones
-                                                                                               
-            logging.info("New connection from: {addr}")                                        # Imprimimos la dirección IP del cliente que se ha conectado
-        
-            # Creamos un proceso hijo
-            pid = os.fork() 
-        
-            if (pid == 0):                                                                     # Pid = 0 <-> proceso hijo
-                cerrar_conexion(sock)                                                          # Cerramos este socket pues solo lo usa el padre
-                process_web_request(conn, args.webroot)                                        # Procesamos la petición
-            else:                                                                              # Estamos en el proceso padre
-                cerrar_conexion(conn)                                                          # Cerramos este socket pues solo lo usa el hijo
-                                                                                                                                                                             
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM, proto = 0) as server_socket:
+            server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            status = server_socket.bind((args.host, args.port))
+            if status == -1:
+                logger.error('Error al tratar de establecer la conexión')
+                sys.exit(1)
+            server_socket.listen()
+            while True:
+                (client_socket, client_addr) = server_socket.accept()
+                logger.info('Accepting connection from {} address'.format(client_addr))
+                child_pid = os.fork()
+                if child_pid == -1:
+                    logger.error('No child created')
+                elif child_pid == 0:
+                    cerrar_conexion(server_socket)
+                    logger.info('Processing message from {}'.format(client_addr))
+                    process_web_request(client_socket, args.webroot)
+                else:
+                    cerrar_conexion(client_socket)                                                                                              
     except KeyboardInterrupt:
         True
 
