@@ -17,8 +17,9 @@ import regex as re                                          # Para usar expresio
 
 
 BUFSIZE = 8192                                              # Tamaño máximo del buffer que se puede utilizar
-TIMEOUT_CONNECTION = 20                                     # Timout para la conexión persistente
-MAX_ACCESOS = 10
+TIMEOUT_CONNECTION = 22                                     # Timout para la conexión persistente
+MAX_ACCESOS = 10                                            # Nº máximo de accesos al recurso index.html
+MAX_PETICIONES = 30                                         # Nº máximo de peticiones del cliente al servidor
 
 MIN_COOKIE_VALUE = 1                                        # Valor mínimo de un cookie-counter
 
@@ -91,7 +92,31 @@ def process_cookies(headers,  cs):
             return 1
     else:
         return 1
+     
+     
         
+def split_message(message):
+    """Esta función separa la linea de petición de las cabeceras del cuerpo"""
+    pass
+
+
+def is_HTTP_correct(peticion):
+    """Comprueba si la peticion HTTP es correcta"""
+    pass
+
+
+def split_headers(headers):
+    """Guardamos en un diccionario el par: (cabecera, valor de la cabecera)"""
+    pass
+
+def is_valid_method(linea_peticion):
+    """Comprobar si la petición HTTP es correcta: Método, URL+Recurso y Versión HTTP"""
+    pass
+
+
+def get_recurso (linea_peticion):
+    """Obtener el recurso solicitado por el cliente: index o cualquier otro"""
+    pass
         
 
 def split_message(message):
@@ -123,7 +148,7 @@ def process_web_request(cs, webroot):
                 * Analizar que la línea de solicitud y comprobar está bien formateada según HTTP 1.1
                     * Devuelve una lista con los atributos de las cabeceras.
                     * Comprobar si la versión de HTTP es 1.1
-                    * Comprobar si es un método GET. Si no devolver un error Error 405 "Method Not Allowed".
+                    * Comprobar si es un método GET o POST. Si no devolver un error Error 405 "Method Not Allowed".
                     * Leer URL y eliminar parámetros si los hubiera
                     * Comprobar si el recurso solicitado es /, En ese caso el recurso es index.html
                     * Construir la ruta absoluta del recurso (webroot + recurso solicitado)
@@ -156,14 +181,33 @@ def process_web_request(cs, webroot):
             if not is_HTTP_correct(linea_peticion):
                 """Enviar página HTML con el error, contruir un mensaje"""
                 continue
-            if not is_GET(linea_peticion):
+            if not is_valid_method(linea_peticion):
                 """Enviar un 405"""
                 continue
-            """No sabemos si aquí por eficiencia o arriba"""
-            cabeceras = split_headers(headers) 
+            url = linea_peticion["URL"] # Eliminar paramettros lo que quiera signifcar esto
+            
+            recurso = get_recurso(linea_peticion)
+            
+            if not recurso:
+                "Devolver 404"
+                continue
+            
+            # Escribir cabeceras en el log
+            
+            cookie_counter = process_cookies(headers, cs)
+            
+            if cookie_counter == MAX_ACCESOS:
+                "devolver 403"
+                continue
+            
+            # Calcular tamaño del fichero y preparar respuesta de todo ok
+            
+            # Bucle tipico para leer de fichero y enviar los datos (considerando el select)
+            
+            
+            
             pass
-        pass
-
+    pass
 
 def main():
     """ Función principal del servidor
