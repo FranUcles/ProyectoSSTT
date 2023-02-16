@@ -93,7 +93,6 @@ def process_cookies(headers,  cs):
     else:
         return 1
      
-     
         
 def split_message(message):
     """Esta función separa la linea de petición de las cabeceras del cuerpo"""
