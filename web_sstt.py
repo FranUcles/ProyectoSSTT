@@ -27,6 +27,8 @@ MIN_COOKIE_VALUE = 1                                        # Valor mínimo de u
 filetypes = {"gif":"image/gif", "jpg":"image/jpg", "jpeg":"image/jpeg", "png":"image/png", "htm":"text/htm", 
              "html":"text/html", "css":"text/css", "js":"text/js"}
 
+valid_emails = {"ja.lopezsola@um.es", "f.uclesayllon@um.es"}
+
 # Configuración de logging
 logging.basicConfig(level=logging.INFO,
                     format='[%(asctime)s.%(msecs)03d] [%(levelname)-7s] %(message)s',
@@ -40,6 +42,7 @@ def enviar_mensaje(cs, data):
     """
     data_encoded = data.encode()
     sent_bytes = cs.send(data_encoded)
+    """ Tratar el envio fallido"""
     return sent_bytes
 
 
@@ -48,6 +51,7 @@ def recibir_mensaje(cs):
         Leemos la información que nos llega. recv() devuelve un string con los datos.
     """
     datos_rcv = cs.recv(BUFSIZE)                            # Lee los datos que se encuentran en el socket
+    """Tratar errores fallidos"""
     return datos_rcv.decode                                 # Devolvemos los datos recibidos del socket convertidos a string
 
 
@@ -112,8 +116,8 @@ def is_valid_method(linea_peticion):
     pass
 
 
-def get_recurso (linea_peticion):
-    """Obtener el recurso solicitado por el cliente: index o cualquier otro"""
+def get_ruta_recurso(linea_peticion):
+    """Obtener la ruta del recurso solicitado por el cliente: index o cualquier otro"""
     pass
         
 
@@ -131,6 +135,13 @@ def split_headers(headers):
     """Guardamos en un diccionario el par: (cabecera, valor de la cabecera)"""
     pass
 
+
+def get_email(body):
+    pass
+
+def create_response():
+    """Si eres el index, set-cookie. Sino, no"""
+    pass
 
 def process_web_request(cs, webroot):
     """ Procesamiento principal de los mensajes recibidos.
@@ -173,39 +184,48 @@ def process_web_request(cs, webroot):
             cerrar_conexion(cs)
             sys.exit()
         else:
-            """Pasan las cositas del bucle principal"""
             datos = recibir_mensaje(cs)
             (linea_peticion, headers, body) = split_message(datos)
             if not is_HTTP_correct(linea_peticion):
-                """Enviar página HTML con el error, contruir un mensaje"""
+                """Enviar mensaje de error"""
                 continue
             if not is_valid_method(linea_peticion):
                 """Enviar un 405"""
                 continue
+            # Escribir cabeceras en el log
+            for cabecera in headers:
+                logger.info('{}: {}'.format(cabecera, headers[cabecera]))
+                
             url = linea_peticion["URL"] # Eliminar paramettros lo que quiera signifcar esto
-            
-            recurso = get_recurso(linea_peticion)
-            
-            if not recurso:
+            ruta_recurso = get_ruta_recurso(linea_peticion)
+            if os.path.isfile(ruta_recurso):
                 "Devolver 404"
                 continue
-            
-            # Escribir cabeceras en el log
-            
-            cookie_counter = process_cookies(headers, cs)
-            
-            if cookie_counter == MAX_ACCESOS:
-                "devolver 403"
-                continue
-            
-            # Calcular tamaño del fichero y preparar respuesta de todo ok
-            
+
+            if ruta_recurso == webroot + "/index.html" and linea_peticion["method"] == "GET":
+                cookie_counter = process_cookies(headers, cs)
+                if cookie_counter == MAX_ACCESOS:
+                    "devolver 403"
+                    continue
+            # Distinguir entre GET y POST
+            if linea_peticion["method"] == "POST":
+                email = get_email(body)
+                if email in valid_emails:
+                    ruta_recurso = webroot + "/email_correcto"
+                else:
+                    ruta_recurso = webroot + "/email_fallido"
+            # Calcular tamaño del fichero
+            tam_fichero = os.stat(ruta_recurso).st_size
+            extension_fichero = os.path.basename(ruta_recurso)
+            # Crear respuesta
+            response = create_response()
             # Bucle tipico para leer de fichero y enviar los datos (considerando el select)
+            with open(ruta_recurso, "rb",) as recurso:
+                # Cosa a hacer
+                while (datos_leidos = recurso.read(BUFSIZE)) != ' ' :
+                    pass
+            # En Set-Cookie hay que poner cookie_counter_1740
             
-            
-            
-            pass
-    pass
 
 def main():
     """ Función principal del servidor
