@@ -20,6 +20,7 @@ BUFSIZE = 8192                                              # Tamaño máximo de
 TIMEOUT_CONNECTION = 22                                     # Timout para la conexión persistente
 MAX_ACCESOS = 10                                            # Nº máximo de accesos al recurso index.html
 MAX_PETICIONES = 30                                         # Nº máximo de peticiones del cliente al servidor
+REPONSE_OK = "200 OK"
 
 MIN_COOKIE_VALUE = 1                                        # Valor mínimo de un cookie-counter
 
@@ -28,6 +29,9 @@ filetypes = {"gif":"image/gif", "jpg":"image/jpg", "jpeg":"image/jpeg", "png":"i
              "html":"text/html", "css":"text/css", "js":"text/js"}
 
 valid_emails = {"ja.lopezsola@um.es", "f.uclesayllon@um.es"}
+
+standart_resposne_headers = ["Server", "Content-Type", "Content-Length", "Date", "Connection", "Keep-Alive", "Set-Cookie"]
+standart_response = "version status\r\nServer: -\r\nContent-Type: -\r\nContent-Length: -\r\nDate: -\r\nConnection: -\r\nKeep-Alive: -\r\nSet-Cookie: -\r\n body"
 
 # Configuración de logging
 logging.basicConfig(level=logging.INFO,
@@ -99,48 +103,69 @@ def process_cookies(headers,  cs):
         
 def split_message(message):
     """Esta función separa la linea de petición de las cabeceras del cuerpo"""
-    pass
+    patron_separador = r'(?P<peticion>.*?)\r\n(?P<cabeceras>.*?)\r\n\r\n(?P<cuerpo>.*)'
+    er_separador = re.compile(patron_separador)
+    match_mensaje = er_separador.match(message)
+    if (match_mensaje):
+        # Separo la linea de petición
+        str_linea_peticion = match_mensaje.group('peticion')
+        linea_peticion = []
+        patron_linea_peticion = r'(?P<metodo>.*?) (?P<URL>.*?) (?P<version>.*?)\r\n'
+        er_linea_peticion = re.compile(patron_linea_peticion)
+        match_linea_peticion = er_linea_peticion.match(str_linea_peticion)
+        if match_linea_peticion:
+            linea_peticion['metodo'] = match_linea_peticion.group('metodo')
+            linea_peticion['URL'] = match_linea_peticion.group('URL')
+            linea_peticion['version'] = match_linea_peticion.group('version')
+        else:
+            return (None, None, None)
+        # Separo las cabeceras
+        str_cabeceras = match_mensaje.group('cabeceras')
+        cabeceras = []
+        patron_cabeceras = r'(?P<cabecera>.*?): (?P<valor>.*?)\r\n'
+        er_cabeceras = re.compile(patron_cabeceras)
+        for cabecera in er_cabeceras.finditer(str_cabeceras):
+            cabeceras[cabecera.group('cabecera')] = cabecera.group('valor')
+        # Separo el cuerpo
+        cuerpo = match_mensaje.group('cuerpo')
+        return (linea_peticion, cabeceras, cuerpo)
+    else:
+        return (None, None, None)
 
 
 def is_HTTP_correct(peticion):
     """Comprueba si la peticion HTTP es correcta"""
-    pass
+    return peticion['metodo'] == "HTTP/1.1"
 
-
-def split_headers(headers):
-    """Guardamos en un diccionario el par: (cabecera, valor de la cabecera)"""
-    pass
 
 def is_valid_method(linea_peticion):
     """Comprobar si la petición HTTP es correcta: Método, URL+Recurso y Versión HTTP"""
-    pass
+    metodo = linea_peticion['metodo']
+    return metodo == "GET" or metodo == "POST"
 
 
 def get_ruta_recurso(linea_peticion):
     """Obtener la ruta del recurso solicitado por el cliente: index o cualquier otro"""
-    pass
+    recurso = linea_peticion['url']
+    if recurso == "/":
+        return "/index.html"
+    else:
+        return recurso
         
 
-def split_message(message):
-    """Esta función separa la linea de petición de las cabeceras del cuerpo"""
-    pass
-
-
-def is_HTTP_correct(peticion):
-    """Comprueba si la peticion HTTP es correcta"""
-    pass
-
-
-def split_headers(headers):
-    """Guardamos en un diccionario el par: (cabecera, valor de la cabecera)"""
-    pass
-
-
 def get_email(body):
-    pass
+    patron_email = r'email=(?P<email>.*?)&'
+    er_email = re.compile(patron_email)
+    match_email = er_email.match(body)
+    if match_email:
+        return match_email.group('email')
+    else:
+        return None
 
-def create_response():
+def create_response(version, status, headers, data):
     """Si eres el index, set-cookie. Sino, no"""
+    # Se supondrá que solo están las cabeceras que se piden
+    response
     pass
 
 def process_web_request(cs, webroot):
@@ -195,13 +220,11 @@ def process_web_request(cs, webroot):
             # Escribir cabeceras en el log
             for cabecera in headers:
                 logger.info('{}: {}'.format(cabecera, headers[cabecera]))
-                
             url = linea_peticion["URL"] # Eliminar paramettros lo que quiera signifcar esto
             ruta_recurso = get_ruta_recurso(linea_peticion)
             if os.path.isfile(ruta_recurso):
                 "Devolver 404"
                 continue
-
             if ruta_recurso == webroot + "/index.html" and linea_peticion["method"] == "GET":
                 cookie_counter = process_cookies(headers, cs)
                 if cookie_counter == MAX_ACCESOS:
@@ -217,13 +240,14 @@ def process_web_request(cs, webroot):
             # Calcular tamaño del fichero
             tam_fichero = os.stat(ruta_recurso).st_size
             extension_fichero = os.path.basename(ruta_recurso)
-            # Crear respuesta
-            response = create_response()
-            # Bucle tipico para leer de fichero y enviar los datos (considerando el select)
+            # Bucle tipico para leer de fichero y enviar los datos
             with open(ruta_recurso, "rb",) as recurso:
-                # Cosa a hacer
-                while (datos_leidos = recurso.read(BUFSIZE)) != ' ' :
-                    pass
+                datos_leidos = recurso.read(BUFSIZE)
+                while datos_leidos!= ' ' :
+                    cabeceras_respuestas = []
+                    mensaje = create_response(linea_peticion['version'], REPONSE_OK, cabeceras_respuestas, datos_leidos)
+                    enviar_mensaje(cs, mensaje)
+                    datos_leidos = recurso.read(BUFSIZE)
             # En Set-Cookie hay que poner cookie_counter_1740
             
 
