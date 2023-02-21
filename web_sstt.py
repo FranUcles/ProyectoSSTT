@@ -15,17 +15,16 @@ import logging                                              # Para imprimir logs
 import regex as re                                          # Para usar expresiones regualres
 
 
-
 BUFSIZE = 8192                                              # Tamaño máximo del buffer que se puede utilizar
 TIMEOUT_CONNECTION = 22                                     # Timout para la conexión persistente
 MAX_ACCESOS = 10                                            # Nº máximo de accesos al recurso index.html
 MAX_PETICIONES = 30                                         # Nº máximo de peticiones del cliente al servidor
 RESPONSE_OK = "200 OK"
-ERROR_400 = ""
-ERROR_401 = ""
-ERROR_403 = ""
-ERROR_404 = ""
-ERROR_405 = ""
+ERROR_400 = "400 Bad Request"
+ERROR_401 = "401 Not Authorized"
+ERROR_403 = "403 Forbidden"
+ERROR_404 = "404 Not Found"
+ERROR_405 = "405 Method Not Allowed"
 
 MIN_COOKIE_VALUE = 1                                        # Valor mínimo de un cookie-counter
 
