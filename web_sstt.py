@@ -30,7 +30,7 @@ MIN_COOKIE_VALUE = 1                                        # Valor mínimo de u
 
 # Extensiones admitidas (extension, name in HTTP)
 filetypes = {"gif":"image/gif", "jpg":"image/jpg", "jpeg":"image/jpeg", "png":"image/png", "htm":"text/htm", 
-             "html":"text/html", "css":"text/css", "js":"text/js", "mp4": "video/mp4", "ogg": "audio/ogg"}
+             "html":"text/html", "css":"text/css", "js":"text/js", "mp4": "video/mp4", "ogg": "audio/ogg", "ico": "image/ico"}
 
 valid_emails = ["ja.lopezsola@um.es", "f.uclesayllon@um.es"]
 
