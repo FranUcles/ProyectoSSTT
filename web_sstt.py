@@ -369,7 +369,7 @@ def process_web_request(cs, webroot):
             # Comprobamos que el recurso solicitado existe
             if (not os.path.isfile(ruta_recurso)):
                 """Enviar un 404"""
-                logger.error("El recurso solicitado{} no existe".format(ruta_recurso))
+                logger.error("El recurso solicitado {} no existe".format(ruta_recurso))
                 ruta_recurso = webroot + "error_404.html"
                 response = create_response_error(ERROR_CODE_404, ERROR_MESSAGE_404, ruta_recurso)
                 send_response(cs, response)
