@@ -47,18 +47,28 @@ def enviar_mensaje(cs, data):
     """ Esta función envía datos (data) a través del socket cs
         Devuelve el número de bytes enviados.
     """
-    sent_bytes = cs.send(data)
-    """ Tratar el envio fallido"""
-    return sent_bytes
+    try:
+        sent_bytes = cs.send(data)
+        return sent_bytes
+    except:
+        """ Tratar el envio fallido"""
+        cs.close()
+        sys.exit()
+    
 
 
 def recibir_mensaje(cs):
     """ Esta función recibe datos a través del socket cs
         Leemos la información que nos llega. recv() devuelve un string con los datos.
     """
-    datos_rcv = cs.recv(BUFSIZE)                            # Lee los datos que se encuentran en el socket
-    """Tratar errores fallidos"""
-    return datos_rcv.decode()                                 # Devolvemos los datos recibidos del socket convertidos a string
+    try:
+        datos_rcv = cs.recv(BUFSIZE)                            # Lee los datos que se encuentran en el socket
+        return datos_rcv.decode()                               # Devolvemos los datos recibidos del socket convertidos a string
+    except:
+        """Tratar errores fallidos"""
+        cs.close()
+        sys.exit()
+                                    
 
 
 def cerrar_conexion(cs):
