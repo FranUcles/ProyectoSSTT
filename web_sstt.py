@@ -117,7 +117,7 @@ def process_cookies(headers,  cs):
     if ("Cookie" in headers):
         header_cookie = headers["Cookie"]                  
         
-        patron_cookie_counter = r'(?<=cookie-counter=)\d+'                                              # Patrón para encontrar el valor cookie-counter
+        patron_cookie_counter = r'(?<=cookie_counter_1740=)\d+'                                         # Patrón para encontrar el valor cookie-counter
         er_cookie_counter = re.compile(patron_cookie_counter)                                           # Compilamos la ER
         match_cookie_counter = er_cookie_counter.search(header_cookie)                                  # Buscamos el valor cookie-counter=x
         
@@ -129,13 +129,13 @@ def process_cookies(headers,  cs):
             if (value_cookie_counter == MAX_ACCESOS):
                 return MAX_ACCESOS
             
-            if (value_cookie_counter >= MIN_COOKIE_VALUE & value_cookie_counter < MAX_ACCESOS):
+            if (value_cookie_counter >= MIN_COOKIE_VALUE and value_cookie_counter < MAX_ACCESOS):
                 new_value_cookie = value_cookie_counter + 1
                 return new_value_cookie
         else:
-            return 1
+            return MIN_COOKIE_VALUE
     else:
-        return 1
+        return MIN_COOKIE_VALUE
 
 
 def split_message(message):
