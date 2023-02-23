@@ -28,6 +28,10 @@ ERROR_405 = "405 Method Not Allowed"
 
 MIN_COOKIE_VALUE = 1                                        # Valor mínimo de un cookie-counter
 
+NOMBRE_COOKIE = "cookie_counter_1740"
+TIMEOUT_COOKIE = 120
+VERSION = "HTTP/1.1"
+
 # Extensiones admitidas (extension, name in HTTP)
 filetypes = {"gif":"image/gif", "jpg":"image/jpg", "jpeg":"image/jpeg", "png":"image/png", "htm":"text/htm", 
              "html":"text/html", "css":"text/css", "js":"text/js", "mp4": "video/mp4", "ogg": "audio/ogg", "ico": "image/ico", "text": "text/plain"}
@@ -195,7 +199,7 @@ def enviar_recurso(cs, version, status, ruta_recurso, cookie = -1):
                 cabeceras_respuestas = {"Server": "webservidor", "Content-Type": filetypes[extension_fichero] if extension_fichero in filetypes else filetypes["text"], "Content-Length": tam_fichero, "Date": datetime.utcnow().strftime('%a, %d %b %Y %H:%M:%S GMT'), "Connection": "keep-alive", "Keep-Alive": TIMEOUT_CONNECTION}
                 # En caso de tener que mandar la cookie, se añade
                 if cookie != -1:
-                    cabeceras_respuestas["Set-Cookie"] = "cookie_counter_1740={} max-age=120".format(cookie)
+                    cabeceras_respuestas["Set-Cookie"] = "{}={} max-age={}".format(NOMBRE_COOKIE, cookie, TIMEOUT_COOKIE)
                 datos_leidos = recurso.read(BUFSIZE)
                 mensaje = create_response(version, status, cabeceras_respuestas, datos_leidos)
                 enviar_mensaje(cs, mensaje)
@@ -255,12 +259,12 @@ def process_web_request(cs, webroot, cliente):
             if not is_HTTP_correct(linea_peticion): # Meter aquí lo de comprobar el Host????
                 """Enviar un 400 """
                 logger.error("Peticion mal formada")
-                enviar_recurso(cs, "HTTP/1.1", ERROR_400, webroot + "/Errores/error_400.html") 
+                enviar_recurso(cs, VERSION, ERROR_400, webroot + "/Errores/error_400.html") 
                 continue
             if not is_valid_method(linea_peticion):
                 """Enviar un 405"""
                 logger.error("Metodo invalido en la petición")
-                enviar_recurso(cs, "HTTP/1.1", ERROR_405, webroot + "/Errores/error_405.html") 
+                enviar_recurso(cs, VERSION, ERROR_405, webroot + "/Errores/error_405.html") 
                 continue
             comprobar_Host(headers)
             # Escribir cabeceras en el log
@@ -270,7 +274,7 @@ def process_web_request(cs, webroot, cliente):
             if not os.path.isfile(ruta_recurso):
                 "Devolver 404"
                 logger.error("Archivo {} no encontrado".format(ruta_recurso))
-                enviar_recurso(cs, "HTTP/1.1", ERROR_404, webroot + "/Errores/error_404.html") 
+                enviar_recurso(cs, VERSION, ERROR_404, webroot + "/Errores/error_404.html") 
                 continue
             logger.info("Sirviendo archivo {}".format(ruta_recurso))
             cookie_nesaria = False
@@ -280,7 +284,7 @@ def process_web_request(cs, webroot, cliente):
                 if cookie_counter == MAX_ACCESOS:
                     "devolver 403"
                     logger.error("Numero máximo de accesos al index.html excedido")
-                    enviar_recurso(cs, "HTTP/1.1", ERROR_403, webroot + "/Errores/error_403.html") 
+                    enviar_recurso(cs, VERSION, ERROR_403, webroot + "/Errores/error_403.html") 
                     break
             # Distinguir entre GET y POST
             if linea_peticion["method"] == "POST":
@@ -288,7 +292,7 @@ def process_web_request(cs, webroot, cliente):
                 if not (email in valid_emails):
                     "Devolver 401"
                     logger.error("Persona no autorizada")
-                    enviar_recurso(cs, "HTTP/1.1", ERROR_401, webroot + "/Errores/error_401.html") 
+                    enviar_recurso(cs, VERSION, ERROR_401, webroot + "/Errores/error_401.html") 
                     continue
             # Enviar un recurso por la red
             enviar_recurso(cs, linea_peticion['version'], RESPONSE_OK, ruta_recurso, cookie_counter if cookie_nesaria else -1)
