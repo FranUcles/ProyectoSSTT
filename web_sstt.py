@@ -185,7 +185,7 @@ def create_response(version, status, headers, data):
     return (linea_peticion + cabeceras + "\r\n").encode() + data
 
 
-def enviar_recurso(cs, version, status, ruta_recurso, cookie):
+def enviar_recurso(cs, version, status, ruta_recurso, cookie = -1):
     tam_fichero = os.stat(ruta_recurso).st_size
     fichero = os.path.basename(ruta_recurso)
     (fichero, separador, extension_fichero) = fichero.partition('.')
@@ -239,33 +239,36 @@ def process_web_request(cs, webroot, cliente):
             * Si es por timeout, se cierra el socket tras el período de persistencia.
                 * NOTA: Si hay algún error, enviar una respuesta de error con una pequeña página HTML que informe del error.
     """
-    while True:
+    peticiones = 0
+    while peticiones <= MAX_PETICIONES:
         (rlist, wlist, xlist) = select.select([cs],[],[], TIMEOUT_CONNECTION)
         if not rlist:
             cerrar_conexion(cs)
+            logger.info("Conexión persistente del cliente {} finalizada".format(cliente))
             sys.exit()
         else:
+            peticiones = peticiones + 1
             logger.info("Procesando petición del cliente {}".format(cliente))
             datos = recibir_mensaje(cs)
             (linea_peticion, headers, body) = split_message(datos)
             if not is_HTTP_correct(linea_peticion): # Meter aquí lo de comprobar el Host????
                 """Enviar un 400 """
                 logger.error("Peticion mal formada")
-                enviar_recurso(cs, "HTTP/1.1", ERROR_400, webroot + "/Errores/error_400.html", -1) # Mis dudas con las version
+                enviar_recurso(cs, "HTTP/1.1", ERROR_400, webroot + "/Errores/error_400.html") 
                 continue
             if not is_valid_method(linea_peticion):
                 """Enviar un 405"""
                 logger.error("Metodo invalido en la petición")
-                enviar_recurso(cs, "HTTP/1.1", ERROR_405, webroot + "/Errores/error_405.html", -1) # Mis dudas con las version
+                enviar_recurso(cs, "HTTP/1.1", ERROR_405, webroot + "/Errores/error_405.html") 
                 continue
             # Escribir cabeceras en el log
             for cabecera in headers:
                 logger.info('{}: {}'.format(cabecera, headers[cabecera]))
             ruta_recurso = webroot + get_ruta_recurso(linea_peticion["URL"]) # Nada de eliminar parametros porque no se permiten los get de escuestas???
-            if os.path.isfile(linea_peticion["URL"]):
+            if not os.path.isfile(ruta_recurso):
                 "Devolver 404"
                 logger.error("Archivo {} no encontrado".format(ruta_recurso))
-                enviar_recurso(cs, "HTTP/1.1", ERROR_404, webroot + "/Errores/error_404.html", -1) # Mis dudas con las version
+                enviar_recurso(cs, "HTTP/1.1", ERROR_404, webroot + "/Errores/error_404.html") 
                 continue
             logger.info("Sirviendo archivo {}".format(ruta_recurso))
             cookie_nesaria = False
@@ -275,20 +278,22 @@ def process_web_request(cs, webroot, cliente):
                 if cookie_counter == MAX_ACCESOS:
                     "devolver 403"
                     logger.error("Numero máximo de accesos excedido")
-                    enviar_recurso(cs, "HTTP/1.1", ERROR_403, webroot + "/Errores/error_403.html", -1) # Mis dudas con las version
+                    enviar_recurso(cs, "HTTP/1.1", ERROR_403, webroot + "/Errores/error_403.html") 
                     continue
             # Distinguir entre GET y POST
             if linea_peticion["method"] == "POST":
                 email = get_email(body)
-                if email in valid_emails:
-                    ruta_recurso = webroot + "/email_correcto"
-                else:
+                if not (email in valid_emails):
                     "Devolver 401"
                     logger.error("Persona no autorizada")
-                    enviar_recurso(cs, "HTTP/1.1", ERROR_401, webroot + "/Errores/error_401.html", -1) # Mis dudas con las version
+                    enviar_recurso(cs, "HTTP/1.1", ERROR_401, webroot + "/Errores/error_401.html") 
                     continue
             # Enviar un recurso por la red
             enviar_recurso(cs, linea_peticion['version'], RESPONSE_OK, ruta_recurso, cookie_counter if cookie_nesaria else -1)
+    logger.info("Número máximo de peticiones alcanzadas por el cliente {}".format(cliente))
+    cerrar_conexion(cs)
+    logger.info("Conexión con el cliente {} cerrada".format(cliente))
+    sys.exit()
             
             
 
