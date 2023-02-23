@@ -30,9 +30,10 @@ MIN_COOKIE_VALUE = 1                                        # Valor mínimo de u
 
 # Extensiones admitidas (extension, name in HTTP)
 filetypes = {"gif":"image/gif", "jpg":"image/jpg", "jpeg":"image/jpeg", "png":"image/png", "htm":"text/htm", 
-             "html":"text/html", "css":"text/css", "js":"text/js", "mp4": "video/mp4", "ogg": "audio/ogg", "ico": "image/ico"}
+             "html":"text/html", "css":"text/css", "js":"text/js", "mp4": "video/mp4", "ogg": "audio/ogg", "ico": "image/ico", "text": "text/plain"}
 
-valid_emails = ["ja.lopezsola@um.es", "f.uclesayllon@um.es"]
+valid_emails = ["ja.lopezsola%40um.es", "f.uclesayllon%40um.es"]
+valid_methods = ["GET", "POST"]
 
 standart_resposne_headers = ["Server", "Content-Type", "Content-Length", "Date", "Connection", "Keep-Alive"]
 
@@ -67,8 +68,7 @@ def recibir_mensaje(cs):
     except:
         """Tratar errores fallidos"""
         cs.close()
-        sys.exit()
-                                    
+        sys.exit()                       
 
 
 def cerrar_conexion(cs):
@@ -87,17 +87,13 @@ def process_cookies(headers,  cs):
     """
     if "Cookie" in headers:
         header_cookie = headers["Cookie"]       # Nos quedamos con el string perteneciente a la línea de cabecera cookie
-        
         patron_cookie_counter = r'(?<=cookie_counter_1740=)\d+'                     # Patrón para encontrar el valor cookie-counter
-        er_cookie_counter = re.compile(patron_cookie_counter)                  # Compilamos la ER
-        match_cookie_counter = er_cookie_counter.search(header_cookie)         # Buscamos el valor cookie-counter=x
-        
-        if(match_cookie_counter):
+        er_cookie_counter = re.compile(patron_cookie_counter)                       # Compilamos la ER
+        match_cookie_counter = er_cookie_counter.search(header_cookie)              # Buscamos el valor cookie-counter=x 
+        if match_cookie_counter:
             cookie_counter = header_cookie[match_cookie_counter.start():match_cookie_counter.end()]     # Nos quedamos con el string perteneciente a cookie-counter
-    
-            value_cookie_counter = int(cookie_counter)
-            
-            if (value_cookie_counter >= MIN_COOKIE_VALUE & value_cookie_counter < MAX_ACCESOS):
+            value_cookie_counter = int(cookie_counter)            
+            if (value_cookie_counter >= MIN_COOKIE_VALUE and value_cookie_counter < MAX_ACCESOS):
                 new_value_cookie = value_cookie_counter + 1
                 return new_value_cookie
             else:
@@ -116,7 +112,7 @@ def split_message(message):
         # Separo la linea de petición
         str_linea_peticion = match_mensaje.group('peticion')
         linea_peticion = {} 
-        patron_linea_peticion = r'(?P<metodo>.*?) (?P<URL>.*?) (?P<version>HTTP/.\..)'
+        patron_linea_peticion = r'(?P<metodo>.*?) (?P<URL>.*?) (?P<version>HTTP/[0-9]\.[0-9])'
         er_linea_peticion = re.compile(patron_linea_peticion)
         match_linea_peticion = er_linea_peticion.match(str_linea_peticion)
         if match_linea_peticion:
@@ -149,7 +145,11 @@ def is_HTTP_correct(peticion):
 def is_valid_method(linea_peticion):
     """Comprobar si la petición HTTP es correcta: Método, URL+Recurso y Versión HTTP"""
     metodo = linea_peticion['method']
-    return metodo == "GET" or metodo == "POST"
+    return metodo in valid_methods
+
+
+def comprobar_Host(headers):
+    return "Host" in headers
 
 
 def get_ruta_recurso(url):
@@ -171,6 +171,7 @@ def get_email(body):
         logger.error("Email no encontrado")
         return None
 
+
 def create_response(version, status, headers, data):
     """Las cabeceras a meter ya vienen dadas. Supondremos que las básicas están"""
     linea_peticion = "{} {}\r\n".format(version, status)
@@ -191,7 +192,7 @@ def enviar_recurso(cs, version, status, ruta_recurso, cookie = -1):
     (fichero, separador, extension_fichero) = fichero.partition('.')
     with open(ruta_recurso, "rb",) as recurso:
                 # Relleno las cabeceras básicas
-                cabeceras_respuestas = {"Server":"webservidor", "Content-Type": filetypes[extension_fichero], "Content-Length":tam_fichero, "Date": datetime.utcnow().strftime('%a, %d %b %Y %H:%M:%S GMT'), "Connection": "keep-alive", "Keep-Alive":TIMEOUT_CONNECTION}
+                cabeceras_respuestas = {"Server": "webservidor", "Content-Type": filetypes[extension_fichero] if extension_fichero in filetypes else filetypes["text"], "Content-Length": tam_fichero, "Date": datetime.utcnow().strftime('%a, %d %b %Y %H:%M:%S GMT'), "Connection": "keep-alive", "Keep-Alive": TIMEOUT_CONNECTION}
                 # En caso de tener que mandar la cookie, se añade
                 if cookie != -1:
                     cabeceras_respuestas["Set-Cookie"] = "cookie_counter_1740={} max-age=120".format(cookie)
@@ -261,6 +262,7 @@ def process_web_request(cs, webroot, cliente):
                 logger.error("Metodo invalido en la petición")
                 enviar_recurso(cs, "HTTP/1.1", ERROR_405, webroot + "/Errores/error_405.html") 
                 continue
+            comprobar_Host(headers)
             # Escribir cabeceras en el log
             for cabecera in headers:
                 logger.info('{}: {}'.format(cabecera, headers[cabecera]))
@@ -277,9 +279,9 @@ def process_web_request(cs, webroot, cliente):
                 cookie_counter = process_cookies(headers, cs)
                 if cookie_counter == MAX_ACCESOS:
                     "devolver 403"
-                    logger.error("Numero máximo de accesos excedido")
+                    logger.error("Numero máximo de accesos al index.html excedido")
                     enviar_recurso(cs, "HTTP/1.1", ERROR_403, webroot + "/Errores/error_403.html") 
-                    continue
+                    break
             # Distinguir entre GET y POST
             if linea_peticion["method"] == "POST":
                 email = get_email(body)
