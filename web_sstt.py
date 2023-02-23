@@ -45,14 +45,17 @@ SERVER_NAME = "web.ceronaturalistas1740.org"
 
 # Valores que deben tomar los campos de la cookie en la respuesta
 NOMBRE_COOKIE = "cookie_counter_1740"
-EXPIRE_TIME = 120                                                       # 2 minutos = 120 segundos (unidad que se debe indicar en Max-Age)
+EXPIRE_TIME = "120"                                                       # 2 minutos = 120 segundos (unidad que se debe indicar en Max-Age)
+
+# Tipo de fichero por defecto
+TYPE_FICH_DEF = "text/plain"
 
 # Extensiones admitidas (extension, name in HTTP)
 filetypes = {"gif":"image/gif", "jpg":"image/jpg", "jpeg":"image/jpeg", "png":"image/png", "htm":"text/htm", 
-             "html":"text/html", "css":"text/css", "js":"text/js"}
+             "html":"text/html", "css":"text/css", "js":"text/js", "mp4":"video/mp4", "ogg":"audio/ogg", "ico":"image/ico"}
 
 # Correos válidos para el formulario a rellenar
-valid_emails = ["ja.lopezsola@um.es", "f.uclesayllon@um.es"]
+valid_emails = ["ja.lopezsola%40um.es", "f.uclesayllon%40um.es"]
 
 # Configuración de logging
 logging.basicConfig(level=logging.INFO,
@@ -233,10 +236,16 @@ def obtener_extension (ruta_recurso):
 
 def headers_response_comunes(codigo_resp, extension, tam_body):
     """Define las cabeceras de la respuesta HTTP comunes tanto para un mensaje de error como de OK"""
+    # Si la extensión no está en nuestro diccionario, devolvermos una por defecto: text/plain
+    
+    type_fich = filetypes[extension]
+    if (not type_fich):
+        type_fich = TYPE_FICH_DEF
+        
     
     response = VERSION + " " + codigo_resp + "\r\n"
     response = response + "Server: " + SERVER_NAME + "\r\n"
-    response = response + "Content-Type: " + filetypes[extension] + "\r\n"
+    response = response + "Content-Type: " + type_fich + "\r\n"
     response = response + "Content-Length: " + str(tam_body) + "\r\n"
     response = response + "Date: " + datetime.utcnow().strftime('%a, %d %b %Y %H:%M:%S GMT') + "\r\n"
     response = response + "Connection: " + "Keep-Alive" + "\r\n"
@@ -268,7 +277,7 @@ def create_response_ok(metodo, extension, cookie_counter, body, tam_body, linea_
     # Si el recurso pedido es /index.html debemos añadir la cabecera cookie
     if ( (metodo == "GET") and (linea_peticion[URL] == "/") ):
         # En Set-Cookie hay que poner cookie_counter_1740
-        response = response + "Set-Cookie: " + NOMBRE_COOKIE + "=" + str(cookie_counter) + " " + "Max-Age=" + str(EXPIRE_TIME) + "\r\n"
+        response = response + "Set-Cookie: " + NOMBRE_COOKIE + "=" + str(cookie_counter) + " " + "Max-Age=" + EXPIRE_TIME + "\r\n"
     
     response = response + "\r\n"
     respuesta = response.encode() + body        # Dado que el cuerpo de la respuesta está en bytes, debemos convertir la línea de petición y cabeceras a bytes
