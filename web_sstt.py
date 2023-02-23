@@ -105,7 +105,7 @@ def recibir_mensaje(cs):
     # pass                                                              # Se utiliza cuando las funciones están vacías para que no de errores
 
 
-def process_cookies(headers,  cs):
+def process_cookies(headers):
     """ Esta función procesa la cookie cookie_counter
         1. Se analizan las cabeceras en headers para buscar la cabecera Cookie
         2. Una vez encontrada una cabecera Cookie se comprueba si el valor es cookie_counter
@@ -195,9 +195,9 @@ def get_ruta_recurso(linea_peticion, webroot):
     url = linea_peticion[URL]
     
     if (url == "/"):
-        ruta_recurso = webroot + "index.html"
+        ruta_recurso = webroot + url + "index.html"
     else:
-        ruta_recurso = webroot + url[1:]                           # Nos saltamos el carácter / de la url ya que está incluido en la webroot
+        ruta_recurso = webroot + url                           # Nos saltamos el carácter / de la url ya que está incluido en la webroot
     
     return ruta_recurso
     
@@ -327,7 +327,7 @@ def process_web_request(cs, webroot):
                         * Cuando ya no hay más información para leer, se corta el bucle
 
             * Si es por timeout, se cierra el socket tras el período de persistencia.
-                * NOTA: Si hay algún error, enviar una respuesta de error con una pequeña página HTML que informe del error.
+                * NOTA: Si hay algún error, enviar una respuesta de error con una pequeña página HTML q            ue informe del error.
     """
     num_peticiones = 0
     while (num_peticiones < MAX_PETICIONES):
@@ -350,7 +350,7 @@ def process_web_request(cs, webroot):
             if (not is_HTTP_correct(linea_peticion)):
                 """Enviar un 400"""
                 logger.error("No se ha hecho una petición con el formato de línea de petición adecuado: Método + URL + HTTP/1.1")
-                ruta_recurso = webroot + "error_400.html"
+                ruta_recurso = webroot + "/ERRORES/error_400.html"
                 response = create_response_error(ERROR_CODE_400, ERROR_MESSAGE_400, ruta_recurso)
                 send_response(cs, response)
                 continue
@@ -358,7 +358,7 @@ def process_web_request(cs, webroot):
             if (not is_valid_method(linea_peticion, body)):
                 """Enviar un 405"""
                 logger.error("El método utilizado ({}) no es válido, debe ser GET o POST".format(linea_peticion[METODO]))
-                ruta_recurso = webroot + "error_405.html"
+                ruta_recurso = webroot + "/ERRORES/error_405.html"
                 response = create_response_error(ERROR_CODE_405, ERROR_MESSAGE_405, ruta_recurso)
                 send_response(cs, response)
                 continue
@@ -370,7 +370,7 @@ def process_web_request(cs, webroot):
             if (not os.path.isfile(ruta_recurso)):
                 """Enviar un 404"""
                 logger.error("El recurso solicitado {} no existe".format(ruta_recurso))
-                ruta_recurso = webroot + "error_404.html"
+                ruta_recurso = webroot + "/ERRORES/error_404.html"
                 response = create_response_error(ERROR_CODE_404, ERROR_MESSAGE_404, ruta_recurso)
                 send_response(cs, response)
                 continue
@@ -388,13 +388,13 @@ def process_web_request(cs, webroot):
             print()
                 
             # Distinguimos entre métodos GET y POST ya que si es GET hay que procesar las cookies
-            if ( (linea_peticion[METODO] == "GET") and (ruta_recurso == webroot + "index.html") ):
-                cookie_counter = process_cookies(headers, cs)
+            if ( (linea_peticion[METODO] == "GET") and (ruta_recurso == webroot + "/index.html") ):
+                cookie_counter = process_cookies(headers)
                 
                 if (cookie_counter == MAX_ACCESOS):
                     """Enviar un 403"""
                     logger.error("Se ha excedido el número máximo de accesos ({}) al recurso index.html, debe esperar".format(MAX_ACCESOS))
-                    ruta_recurso = webroot + "error_404.html"
+                    ruta_recurso = webroot + "/ERRORES/error_403.html"
                     response = create_response_error(ERROR_CODE_403, ERROR_MESSAGE_403, ruta_recurso)
                     send_response(cs, response)
                     continue
@@ -412,7 +412,7 @@ def process_web_request(cs, webroot):
                     ruta_recurso = webroot + "email_correcto.html"
                 else:
                     logger.error("El email indicado ({}) no tiene autorización".format(email))
-                    ruta_recurso = webroot + "error_401.html"
+                    ruta_recurso = webroot + "/ERRORES/error_401.html"
                     response = create_response_error(ERROR_CODE_401, ERROR_MESSAGE_401, ruta_recurso)
                     send_response(cs, response)
                     continue
