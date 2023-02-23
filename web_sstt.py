@@ -28,21 +28,14 @@ URL = "url"
 VERSION = "version"
 
 # Código a devolver cuando la solicitud del cliente es correctas
-ACCEPT_CODE = "200"
-ACCEPT_MESSAGE = "OK"
+ACCEPT_CODE = "200 OK"
 
 # Códigos a devolver cuando la solicitud del cliente es incorrecta
-ERROR_CODE_400 = "400"
-ERROR_CODE_401 = "401"
-ERROR_CODE_403 = "403"
-ERROR_CODE_404 = "404"
-ERROR_CODE_405 = "405"
-
-ERROR_MESSAGE_400 = "Bad Request"
-ERROR_MESSAGE_401 = "Unauthorized"
-ERROR_MESSAGE_403 = "Forbidden"
-ERROR_MESSAGE_404 = "Not Found"
-ERROR_MESSAGE_405 = "Method Not Allowed"
+ERROR_MESSAGE_400 = "400 Bad Request"
+ERROR_MESSAGE_401 = "401 Unauthorized"
+ERROR_MESSAGE_403 = "403 Forbidden"
+ERROR_MESSAGE_404 = "404 Not Found"
+ERROR_MESSAGE_405 = "405 Method Not Allowed"
 
 # Versión de HTTP que usa este servidor
 VERSION = "HTTP/1.1"
@@ -238,10 +231,10 @@ def obtener_extension (ruta_recurso):
     return extension_fichero
 
 
-def headers_response_comunes(codigo_resp, mensaje_resp, extension, tam_body):
+def headers_response_comunes(codigo_resp, extension, tam_body):
     """Define las cabeceras de la respuesta HTTP comunes tanto para un mensaje de error como de OK"""
     
-    response = VERSION + " " + codigo_resp + " " + mensaje_resp + "\r\n"
+    response = VERSION + " " + codigo_resp + "\r\n"
     response = response + "Server: " + SERVER_NAME + "\r\n"
     response = response + "Content-Type: " + filetypes[extension] + "\r\n"
     response = response + "Content-Length: " + str(tam_body) + "\r\n"
@@ -252,7 +245,7 @@ def headers_response_comunes(codigo_resp, mensaje_resp, extension, tam_body):
     return response
 
 
-def create_response_error(error_code, error_message, recurso_body):
+def create_response_error(error_message, recurso_body):
     """Enviar una respuesta de error"""
     
     # Leer el body, sacar su tamaño y su extensión
@@ -261,7 +254,7 @@ def create_response_error(error_code, error_message, recurso_body):
     extension_body = obtener_extension(recurso_body)
     
     # Crear la respuesta
-    response = headers_response_comunes(error_code, error_message, extension_body, tam_recurso_body)
+    response = headers_response_comunes(error_message, extension_body, tam_recurso_body)
     response = response + "\r\n"
     
     respuesta = response.encode() + body        # Dado que el cuerpo de la respuesta está en bytes, debemos convertir la línea de petición y cabeceras a bytes
@@ -270,7 +263,7 @@ def create_response_error(error_code, error_message, recurso_body):
 
 def create_response_ok(metodo, extension, cookie_counter, body, tam_body, linea_peticion):
     """Enviar una respuesta de OK a la petición"""
-    response = headers_response_comunes(ACCEPT_CODE, ACCEPT_MESSAGE, extension, tam_body)
+    response = headers_response_comunes(ACCEPT_CODE, extension, tam_body)
     
     # Si el recurso pedido es /index.html debemos añadir la cabecera cookie
     if ( (metodo == "GET") and (linea_peticion[URL] == "/") ):
@@ -351,7 +344,7 @@ def process_web_request(cs, webroot):
                 """Enviar un 400"""
                 logger.error("No se ha hecho una petición con el formato de línea de petición adecuado: Método + URL + HTTP/1.1")
                 ruta_recurso = webroot + "/ERRORES/error_400.html"
-                response = create_response_error(ERROR_CODE_400, ERROR_MESSAGE_400, ruta_recurso)
+                response = create_response_error(ERROR_MESSAGE_400, ruta_recurso)
                 send_response(cs, response)
                 continue
             
@@ -359,7 +352,7 @@ def process_web_request(cs, webroot):
                 """Enviar un 405"""
                 logger.error("El método utilizado ({}) no es válido, debe ser GET o POST".format(linea_peticion[METODO]))
                 ruta_recurso = webroot + "/ERRORES/error_405.html"
-                response = create_response_error(ERROR_CODE_405, ERROR_MESSAGE_405, ruta_recurso)
+                response = create_response_error(ERROR_MESSAGE_405, ruta_recurso)
                 send_response(cs, response)
                 continue
                 
@@ -371,7 +364,7 @@ def process_web_request(cs, webroot):
                 """Enviar un 404"""
                 logger.error("El recurso solicitado {} no existe".format(ruta_recurso))
                 ruta_recurso = webroot + "/ERRORES/error_404.html"
-                response = create_response_error(ERROR_CODE_404, ERROR_MESSAGE_404, ruta_recurso)
+                response = create_response_error(ERROR_MESSAGE_404, ruta_recurso)
                 send_response(cs, response)
                 continue
             
@@ -395,7 +388,7 @@ def process_web_request(cs, webroot):
                     """Enviar un 403"""
                     logger.error("Se ha excedido el número máximo de accesos ({}) al recurso index.html, debe esperar".format(MAX_ACCESOS))
                     ruta_recurso = webroot + "/ERRORES/error_403.html"
-                    response = create_response_error(ERROR_CODE_403, ERROR_MESSAGE_403, ruta_recurso)
+                    response = create_response_error(ERROR_MESSAGE_403, ruta_recurso)
                     send_response(cs, response)
                     continue
             
@@ -413,7 +406,7 @@ def process_web_request(cs, webroot):
                 else:
                     logger.error("El email indicado ({}) no tiene autorización".format(email))
                     ruta_recurso = webroot + "/ERRORES/error_401.html"
-                    response = create_response_error(ERROR_CODE_401, ERROR_MESSAGE_401, ruta_recurso)
+                    response = create_response_error(ERROR_MESSAGE_401, ruta_recurso)
                     send_response(cs, response)
                     continue
                     
