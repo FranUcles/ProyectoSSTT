@@ -20,7 +20,8 @@ BUFSIZE = 8192                                                          # Tamañ
 TIMEOUT_CONNECTION = 22                                                 # Timout para la conexión persistente: 1 + 7 + 4 + 0 + 20 = 22
 MAX_ACCESOS = 10                                                        # Nº máximo de accesos al recurso index.html
 MAX_PETICIONES = 30                                                     # Nº máximo de peticiones del cliente al servidor
-MIN_COOKIE_VALUE = 1                                                    # Valor mínimo de un cookie-counter
+MIN_COOKIE_VALUE = 120                                                  # Valor mínimo de un cookie-counter
+NO_VALID_VALUE = 0                                                      # Valor no válido de la cookie
 
 # Terna de valores para acceder al diccionario que contiene la línea de petición (método usado, recurso solicitado, versión HTTP)
 METODO = "method"
@@ -55,7 +56,7 @@ filetypes = {"gif":"image/gif", "jpg":"image/jpg", "jpeg":"image/jpeg", "png":"i
              "html":"text/html", "css":"text/css", "js":"text/js", "mp4":"video/mp4", "ogg":"audio/ogg", "ico":"image/ico"}
 
 # Correos válidos para el formulario a rellenar
-valid_emails = ["ja.lopezsola%40um.es", "f.uclesayllon%40um.es"]
+valid_emails = ["ja.lopezsola%%40um.es", "f.uclesayllon%%40um.es"]      # El doble % permite escapar el primer %
 
 # Configuración de logging
 logging.basicConfig(level=logging.INFO,
@@ -123,7 +124,7 @@ def process_cookies(headers):
             value_cookie_counter = int(cookie_counter)
             
             if (value_cookie_counter == MAX_ACCESOS):
-                return MAX_ACCESOS
+                return NO_VALID_VALUE
             
             if (value_cookie_counter >= MIN_COOKIE_VALUE and value_cookie_counter < MAX_ACCESOS):
                 new_value_cookie = value_cookie_counter + 1
@@ -187,7 +188,7 @@ def is_valid_method(linea_peticion, body):
 
 
 def get_ruta_recurso(linea_peticion, webroot):
-    """Obtener la ruta del recurso solicitado por el cliente: index o cualquier otro"""
+    """Obtener la ruta del recurso solicitado por el cliente: index o cualquier otro"""    
     url = linea_peticion[URL]
     
     if (url == "/"):
@@ -200,7 +201,8 @@ def get_ruta_recurso(linea_peticion, webroot):
 
 def get_email(body):
     """Obtener el email del formulario que se ha rellenado"""
-    patron_email = r'(?<=email=)(.+?)(?=(&| ))'
+    print(body)
+    patron_email = r'(?<=email=)(.+?)(?=(&| |\r\n))'
     er_email = re.compile(patron_email)
     match_email = er_email.search(body)
     
@@ -239,10 +241,10 @@ def headers_response_comunes(codigo_resp, extension, tam_body):
     # Si la extensión no está en nuestro diccionario, devolvermos una por defecto: text/plain
     
     type_fich = filetypes[extension]
+    
     if (not type_fich):
         type_fich = TYPE_FICH_DEF
         
-    
     response = VERSION + " " + codigo_resp + "\r\n"
     response = response + "Server: " + SERVER_NAME + "\r\n"
     response = response + "Content-Type: " + type_fich + "\r\n"
@@ -276,8 +278,13 @@ def create_response_ok(metodo, extension, cookie_counter, body, tam_body, linea_
     
     # Si el recurso pedido es /index.html debemos añadir la cabecera cookie
     if ( (metodo == "GET") and (linea_peticion[URL] == "/") ):
-        # En Set-Cookie hay que poner cookie_counter_1740
-        response = response + "Set-Cookie: " + NOMBRE_COOKIE + "=" + str(cookie_counter) + " " + "Max-Age=" + EXPIRE_TIME + "\r\n"
+        # En Set-Cookie hay que poner cookie_counter_1740 y Max-Age solo se envía si es pertinente (no hay que enviarlo constantemente o la cookie no expirará)
+        response = response + "Set-Cookie: " + NOMBRE_COOKIE + "=" + str(cookie_counter) 
+        
+        if (cookie_counter == 1):
+            response = response + " " + "Max-Age=" + EXPIRE_TIME + "\r\n"
+        else:
+            response = response + "\r\n"
     
     response = response + "\r\n"
     respuesta = response.encode() + body        # Dado que el cuerpo de la respuesta está en bytes, debemos convertir la línea de petición y cabeceras a bytes
@@ -330,7 +337,7 @@ def process_web_request(cs, webroot):
 
             * Si es por timeout, se cierra el socket tras el período de persistencia.
                 * NOTA: Si hay algún error, enviar una respuesta de error con una pequeña página HTML q            ue informe del error.
-    """
+    """    
     num_peticiones = 0
     while (num_peticiones < MAX_PETICIONES):
         (rlist, wlist, xlist) = select.select([cs],[],[], TIMEOUT_CONNECTION)
@@ -393,7 +400,7 @@ def process_web_request(cs, webroot):
             if ( (linea_peticion[METODO] == "GET") and (ruta_recurso == webroot + "/index.html") ):
                 cookie_counter = process_cookies(headers)
                 
-                if (cookie_counter == MAX_ACCESOS):
+                if (cookie_counter == NO_VALID_VALUE):
                     """Enviar un 403"""
                     logger.error("Se ha excedido el número máximo de accesos ({}) al recurso index.html, debe esperar".format(MAX_ACCESOS))
                     ruta_recurso = webroot + "/ERRORES/error_403.html"
@@ -455,6 +462,10 @@ def main():
 
         if args.verbose:
             logger.setLevel(logging.DEBUG)
+            
+        # Comprobamos si se ha pasado como webroot una estructura de la forma: /../../ y en ese caso quitamos el último /
+        if (args.webroot[len(args.webroot)-1] == "/"):
+            args.webroot = args.webroot[:len(args.webroot)-1]
 
         logger.info('Enabling server in address {} and port {}.'.format(args.host, args.port))
         logger.info("Serving files from {}".format(args.webroot))
