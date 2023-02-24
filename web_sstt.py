@@ -143,7 +143,7 @@ def split_message(message):
 
 def is_HTTP_correct(peticion):
     """Comprueba si la peticion HTTP es correcta"""
-    return peticion != None and peticion['version'] == "HTTP/1.1"
+    return peticion != None and peticion['version'] == VERSION
 
 
 def is_valid_method(linea_peticion):
@@ -199,7 +199,7 @@ def enviar_recurso(cs, version, status, ruta_recurso, cookie = -1):
                 cabeceras_respuestas = {"Server": "webservidor", "Content-Type": filetypes[extension_fichero] if extension_fichero in filetypes else filetypes["text"], "Content-Length": tam_fichero, "Date": datetime.utcnow().strftime('%a, %d %b %Y %H:%M:%S GMT'), "Connection": "keep-alive", "Keep-Alive": TIMEOUT_CONNECTION}
                 # En caso de tener que mandar la cookie, se añade
                 if cookie != -1:
-                    cabeceras_respuestas["Set-Cookie"] = "{}={} max-age={}".format(NOMBRE_COOKIE, cookie, TIMEOUT_COOKIE)
+                    cabeceras_respuestas["Set-Cookie"] = "{}={}; Max-Age={}".format(NOMBRE_COOKIE, cookie, TIMEOUT_COOKIE)
                 datos_leidos = recurso.read(BUFSIZE)
                 mensaje = create_response(version, status, cabeceras_respuestas, datos_leidos)
                 enviar_mensaje(cs, mensaje)
