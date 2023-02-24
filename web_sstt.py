@@ -199,7 +199,7 @@ def enviar_recurso(cs, version, status, ruta_recurso, cookie = -1):
                 cabeceras_respuestas = {"Server": "webservidor", "Content-Type": filetypes[extension_fichero] if extension_fichero in filetypes else filetypes["text"], "Content-Length": tam_fichero, "Date": datetime.utcnow().strftime('%a, %d %b %Y %H:%M:%S GMT'), "Connection": "keep-alive", "Keep-Alive": TIMEOUT_CONNECTION}
                 # En caso de tener que mandar la cookie, se añade
                 if cookie != -1:
-                    cabeceras_respuestas["Set-Cookie"] = "{}={} max-age={}".format(NOMBRE_COOKIE, cookie, TIMEOUT_COOKIE)
+                    cabeceras_respuestas["Set-Cookie"] = "{}={}; Max-Age={}".format(NOMBRE_COOKIE, cookie, TIMEOUT_COOKIE)
                 datos_leidos = recurso.read(BUFSIZE)
                 mensaje = create_response(version, status, cabeceras_respuestas, datos_leidos)
                 enviar_mensaje(cs, mensaje)
@@ -256,7 +256,7 @@ def process_web_request(cs, webroot, cliente):
             logger.info("Procesando petición del cliente {}".format(cliente))
             datos = recibir_mensaje(cs)
             (linea_peticion, headers, body) = split_message(datos)
-            if not is_HTTP_correct(linea_peticion): # Meter aquí lo de comprobar el Host????
+            if not is_HTTP_correct(linea_peticion):
                 """Enviar un 400 """
                 logger.error("Peticion mal formada")
                 enviar_recurso(cs, VERSION, ERROR_400, webroot + "/Errores/error_400.html") 
@@ -270,7 +270,7 @@ def process_web_request(cs, webroot, cliente):
             # Escribir cabeceras en el log
             for cabecera in headers:
                 logger.info('{}: {}'.format(cabecera, headers[cabecera]))
-            ruta_recurso = webroot + get_ruta_recurso(linea_peticion["URL"]) # Nada de eliminar parametros porque no se permiten los get de escuestas???
+            ruta_recurso = webroot + get_ruta_recurso(linea_peticion["URL"])
             if not os.path.isfile(ruta_recurso):
                 "Devolver 404"
                 logger.error("Archivo {} no encontrado".format(ruta_recurso))
