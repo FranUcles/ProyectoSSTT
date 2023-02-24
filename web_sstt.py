@@ -20,7 +20,7 @@ BUFSIZE = 8192                                                          # Tamañ
 TIMEOUT_CONNECTION = 22                                                 # Timout para la conexión persistente: 1 + 7 + 4 + 0 + 20 = 22
 MAX_ACCESOS = 10                                                        # Nº máximo de accesos al recurso index.html
 MAX_PETICIONES = 30                                                     # Nº máximo de peticiones del cliente al servidor
-MIN_COOKIE_VALUE = 120                                                  # Valor mínimo de un cookie-counter
+MIN_COOKIE_VALUE = 1                                                    # Valor mínimo de un cookie-counter
 NO_VALID_VALUE = 0                                                      # Valor no válido de la cookie
 
 # Terna de valores para acceder al diccionario que contiene la línea de petición (método usado, recurso solicitado, versión HTTP)
@@ -46,7 +46,7 @@ SERVER_NAME = "web.ceronaturalistas1740.org"
 
 # Valores que deben tomar los campos de la cookie en la respuesta
 NOMBRE_COOKIE = "cookie_counter_1740"
-EXPIRE_TIME = "120"                                                       # 2 minutos = 120 segundos (unidad que se debe indicar en Max-Age)
+EXPIRE_TIME = "120"                                                   # 2 minutos = 120 segundos (unidad que se debe indicar en Max-Age)
 
 # Tipo de fichero por defecto
 TYPE_FICH_DEF = "text/plain"
@@ -56,7 +56,7 @@ filetypes = {"gif":"image/gif", "jpg":"image/jpg", "jpeg":"image/jpeg", "png":"i
              "html":"text/html", "css":"text/css", "js":"text/js", "mp4":"video/mp4", "ogg":"audio/ogg", "ico":"image/ico"}
 
 # Correos válidos para el formulario a rellenar
-valid_emails = ["ja.lopezsola%%40um.es", "f.uclesayllon%%40um.es"]      # El doble % permite escapar el primer %
+valid_emails = ["ja.lopezsola%40um.es", "f.uclesayllon%40um.es"]      # El @ se decodifica como un %40
 
 # Configuración de logging
 logging.basicConfig(level=logging.INFO,
@@ -78,7 +78,7 @@ def enviar_mensaje(cs, data):
     bytes_snd = cs.send(data)                                           # Los datos ya están codificados en bytes, por lo que no necesitamos una codificación extra
         
     if (bytes_snd == 0):
-        logger.error("Error al tratar de enviar datos por el socket")  
+        logger.error("Error al tratar de enviar datos por el socket, cerramos la conexión")  
         cerrar_conexion(cs)
         sys.exit(1)
                            
@@ -93,7 +93,7 @@ def recibir_mensaje(cs):
     
     """Tratar errores fallidos"""
     if (not datos_rcv):
-        logger.error("Error al tratar de recibir datos por el socket")  
+        logger.error("Error al tratar de recibir datos por el socket, cerramos la conexión")  
         cerrar_conexion(cs)
         sys.exit(1)
     
@@ -201,8 +201,8 @@ def get_ruta_recurso(linea_peticion, webroot):
 
 def get_email(body):
     """Obtener el email del formulario que se ha rellenado"""
-    print(body)
-    patron_email = r'(?<=email=)(.+?)(?=(&| |\r\n))'
+    patron_email = r'(?<=email=).+(?=(&| |\r\n|))'            # Le añado la posibilidad de que el body no acabe en nada más además de la cadena, es decir, ni
+                                                              # \r\n ni espacio ni & ni nada, el vacío solamente
     er_email = re.compile(patron_email)
     match_email = er_email.search(body)
     
@@ -272,12 +272,12 @@ def create_response_error(error_message, recurso_body):
     return respuesta
     
 
-def create_response_ok(metodo, extension, cookie_counter, body, tam_body, linea_peticion):
+def create_response_ok(linea_peticion, extension, cookie_counter, body, tam_body):
     """Enviar una respuesta de OK a la petición"""
     response = headers_response_comunes(ACCEPT_CODE, extension, tam_body)
     
     # Si el recurso pedido es /index.html debemos añadir la cabecera cookie
-    if ( (metodo == "GET") and (linea_peticion[URL] == "/") ):
+    if ( (linea_peticion[METODO] == "GET") and (linea_peticion[URL] == "/") ):
         # En Set-Cookie hay que poner cookie_counter_1740 y Max-Age solo se envía si es pertinente (no hay que enviarlo constantemente o la cookie no expirará)
         response = response + "Set-Cookie: " + NOMBRE_COOKIE + "=" + str(cookie_counter) 
         
@@ -294,8 +294,7 @@ def create_response_ok(metodo, extension, cookie_counter, body, tam_body, linea_
 def send_response (cs, response):
     """Enviar una respuesta HTTP por el socket"""
     # Bucle para enviar la respuesta por el socket
-    tam_response = len(response)                                           # len devuelve el nº de caracteres de la cadena, como cada carácter es 1 byte
-                                                                           # nos devuelve el tamaño en bytes de la respuesta
+    tam_response = len(response)                                           # len devuelve el nº de bytes de la cadena                                                                      # nos devuelve el tamaño en bytes de la respuesta
     tam_enviado = 0
     while (tam_enviado < tam_response):
         num_bytes_snd = enviar_mensaje(cs, response[tam_enviado:])         # Envío desde tam_enviado al final de los datos (funcionalidad de los strings)
@@ -313,7 +312,7 @@ def process_web_request(cs, webroot):
 
             * Si no es por timeout y hay datos en el socket cs.
                 * Leer los datos con recv.
-                * Analizar que la línea de solicitud y comprobar está bien formateada según HTTP 1.1                    -> Lo restringe la ER de línea de petición
+                * Analizar que la línea de solicitud y comprobar está bien formateada según HTTP 1.1            dsfsf        -> Lo restringe la ER de línea de petición
                     * Devuelve una lista con los atributos de las cabeceras.                                            -> Lo obtenemos con split_message
                     * Comprobar si la versión de HTTP es 1.1                                                            -> Lo restringe la ER de línea de petición
                     * Comprobar si es un método GET o POST. Si no devolver un error Error 405 "Method Not Allowed".     -> Lo comprobamos con is_valid_method
@@ -337,8 +336,13 @@ def process_web_request(cs, webroot):
 
             * Si es por timeout, se cierra el socket tras el período de persistencia.
                 * NOTA: Si hay algún error, enviar una respuesta de error con una pequeña página HTML q            ue informe del error.
-    """    
-    num_peticiones = 0
+    """        
+    # Inicializamos el valor de la cookie a no válido para evitar posibles llamadas a send_response sin haber creado el cookie counter aun. 
+    # Esto ocurre si se cierra la conexión, pero el cliente se ha quedado con la web abierte, cuando meta un correo, al ser un post no se origina la variable
+    # cookie_counter en el nuevo hijo que se encarga de las peticiones, por tanto podría producirse una excepción por un uso de variable no inicializado
+    cookie_counter = NO_VALID_VALUE   
+    
+    num_peticiones = 0                                                          # Contador para el nº de peticiones realizadas al servidor desde esta conexión         
     while (num_peticiones < MAX_PETICIONES):
         (rlist, wlist, xlist) = select.select([cs],[],[], TIMEOUT_CONNECTION)
         
@@ -418,7 +422,7 @@ def process_web_request(cs, webroot):
                     print("\nEmail indicado en el formulario: {}".format(email))
                 
                 if email in valid_emails:
-                    ruta_recurso = webroot + "email_correcto.html"
+                    ruta_recurso = webroot + "/accion_form.html"
                 else:
                     logger.error("El email indicado ({}) no tiene autorización".format(email))
                     ruta_recurso = webroot + "/ERRORES/error_401.html"
@@ -434,7 +438,7 @@ def process_web_request(cs, webroot):
             body_response = leer_recurso(ruta_recurso)
                     
             # Crear respuesta
-            response = create_response_ok(linea_peticion[METODO], extension_fichero, cookie_counter, body_response, tam_fichero, linea_peticion)
+            response = create_response_ok(linea_peticion, extension_fichero, cookie_counter, body_response, tam_fichero)
     
             # Enviar respuesta
             send_response(cs, response)
