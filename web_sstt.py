@@ -36,7 +36,7 @@ VERSION = "HTTP/1.1"
 filetypes = {"gif":"image/gif", "jpg":"image/jpg", "jpeg":"image/jpeg", "png":"image/png", "htm":"text/htm", 
              "html":"text/html", "css":"text/css", "js":"text/js", "mp4": "video/mp4", "ogg": "audio/ogg", "ico": "image/ico", "text": "text/plain"}
 
-valid_emails = ["ja.lopezsola%40um.es", "f.uclesayllon%40um.es"]
+valid_emails = ["ja.lopezsola%40um.es", "f.uclesayllon%40um.es"] # El %40 es por la codificación del @
 valid_methods = ["GET", "POST"]
 
 standart_resposne_headers = ["Server", "Content-Type", "Content-Length", "Date", "Connection", "Keep-Alive"]
@@ -165,10 +165,9 @@ def get_ruta_recurso(url):
         
 
 def get_email(body):
-    logger.info("Cuerpo {}".format(body))
-    patron_email = r'email=(?P<email>.*?)&?' # Problema con codificar el @ como %40
+    patron_email = r'email=(?P<email>.*?)'
     er_email = re.compile(patron_email)
-    match_email = er_email.match(body)
+    match_email = er_email.fullmatch(body)
     if match_email:
         return match_email.group('email')
     else:
