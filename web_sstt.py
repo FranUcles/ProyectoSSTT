@@ -165,10 +165,9 @@ def get_ruta_recurso(url):
         
 
 def get_email(body):
-    logger.info("Cuerpo {}".format(body))
-    patron_email = r'email=(?P<email>.*?)&?' # Problema con codificar el @ como %40
+    patron_email = r'email=(?P<email>.*?)'
     er_email = re.compile(patron_email)
-    match_email = er_email.match(body)
+    match_email = er_email.fullmatch(body)
     if match_email:
         return match_email.group('email')
     else:
