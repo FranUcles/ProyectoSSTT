@@ -17,8 +17,14 @@ import regex as re                                          # Para usar expresio
 
 BUFSIZE = 8192                                              # Tamaño máximo del buffer que se puede utilizar
 TIMEOUT_CONNECTION = 22                                     # Timout para la conexión persistente
-MAX_ACCESOS = 10                                            # Nº máximo de accesos al recurso index.html
+
+#¿Está bien cambiar a 11?
+MAX_ACCESOS = 11                                            # Nº máximo de accesos al recurso index.html
 MAX_PETICIONES = 30                                         # Nº máximo de peticiones del cliente al servidor
+NO_VALID_VALUE = 0                                          # Valor no válido de la cookie
+
+# ¿Hacemos el close?
+
 RESPONSE_OK = "200 OK"
 ERROR_400 = "400 Bad Request"
 ERROR_401 = "401 Not Authorized"
@@ -28,18 +34,24 @@ ERROR_405 = "405 Method Not Allowed"
 
 MIN_COOKIE_VALUE = 1                                        # Valor mínimo de un cookie-counter
 
+# Nombre del servidor
+SERVER_NAME = "web.serviciostelematicos1740.org"
+
 NOMBRE_COOKIE = "cookie_counter_1740"
 TIMEOUT_COOKIE = 120
 VERSION = "HTTP/1.1"
 
 # Extensiones admitidas (extension, name in HTTP)
 filetypes = {"gif":"image/gif", "jpg":"image/jpg", "jpeg":"image/jpeg", "png":"image/png", "htm":"text/htm", 
-             "html":"text/html", "css":"text/css", "js":"text/js", "mp4": "video/mp4", "ogg": "audio/ogg", "ico": "image/ico", "text": "text/plain"}
+             "html":"text/html", "css":"text/css", "js":"text/js", "mp4": "video/mp4", "ogg": "audio/ogg", "ico":"image/ico", 
+             "mp3":"audio/mpeg", "text":"text/plain"}
+
+html = {"index":"/index.html", "mail":"/accion_form.html", "400":"/Errores/error_400.html", "401":"/Errores/error_401.html", "403":"/Errores/error_403.html",
+        "404":"/Errores/error_404.html","405":"/Errores/error_405.html"}
 
 valid_emails = ["ja.lopezsola%40um.es", "f.uclesayllon%40um.es"]
-valid_methods = ["GET", "POST"]
 
-standart_resposne_headers = ["Server", "Content-Type", "Content-Length", "Date", "Connection", "Keep-Alive"]
+standart_response_headers = ["Server", "Content-Type", "Content-Length", "Date", "Connection", "Keep-Alive"]
 
 # Configuración de logging
 logging.basicConfig(level=logging.INFO,
@@ -48,19 +60,31 @@ logging.basicConfig(level=logging.INFO,
 logger = logging.getLogger()
 
 
+def cerrar_conexion(cs):
+    """ Esta función cierra una conexión activa.
+    """
+    cs.close()
+
+
 def enviar_mensaje(cs, data):
     """ Esta función envía datos (data) a través del socket cs
         Devuelve el número de bytes enviados.
     """
     try:
         sent_bytes = cs.send(data)
+        
+        if (sent_bytes == 0):
+            logger.error("Error al tratar de enviar datos por el socket, cerramos la conexión")  
+            cerrar_conexion(cs)
+            sys.exit(1)
+        
         return sent_bytes
-    except:
+    except Exception:
         """ Tratar el envio fallido"""
-        cs.close()
-        sys.exit()
+        logger.error("Se produjo una excepción al usar el socket para enviar datos. Cerramos la conexión")
+        cerrar_conexion(cs)
+        sys.exit(1)
     
-
 
 def recibir_mensaje(cs):
     """ Esta función recibe datos a través del socket cs
@@ -69,16 +93,10 @@ def recibir_mensaje(cs):
     try:
         datos_rcv = cs.recv(BUFSIZE)                            # Lee los datos que se encuentran en el socket
         return datos_rcv.decode()                               # Devolvemos los datos recibidos del socket convertidos a string
-    except:
-        """Tratar errores fallidos"""
-        cs.close()
-        sys.exit()                       
-
-
-def cerrar_conexion(cs):
-    """ Esta función cierra una conexión activa.
-    """
-    cs.close()
+    except Exception:
+        logger.error("Se produjo una excepción al usar el socket para recibir datos. Cerramos la conexión")
+        cerrar_conexion(cs)
+        sys.exit(1)
 
 
 def process_cookies(headers,  cs):
@@ -90,7 +108,7 @@ def process_cookies(headers,  cs):
         5. Si se encuentra y tiene un valor 1 <= x < MAX_ACCESOS se incrementa en 1 y se devuelve el valor
     """
     if "Cookie" in headers:
-        header_cookie = headers["Cookie"]       # Nos quedamos con el string perteneciente a la línea de cabecera cookie
+        header_cookie = headers["Cookie"]                                           # Nos quedamos con el string perteneciente a la línea de cabecera cookie
         patron_cookie_counter = r'(?<=cookie_counter_1740=)\d+'                     # Patrón para encontrar el valor cookie-counter
         er_cookie_counter = re.compile(patron_cookie_counter)                       # Compilamos la ER
         match_cookie_counter = er_cookie_counter.search(header_cookie)              # Buscamos el valor cookie-counter=x 
@@ -106,6 +124,7 @@ def process_cookies(headers,  cs):
             return MIN_COOKIE_VALUE
     else:
         return MIN_COOKIE_VALUE
+    
         
 def split_message(message):
     """Esta función separa la linea de petición de las cabeceras del cuerpo"""
@@ -116,7 +135,7 @@ def split_message(message):
         # Separo la linea de petición
         str_linea_peticion = match_mensaje.group('peticion')
         linea_peticion = {} 
-        patron_linea_peticion = r'(?P<metodo>.*?) (?P<URL>.*?) (?P<version>HTTP/[0-9]\.[0-9])'
+        patron_linea_peticion = r'(?P<metodo>(GET|POST|HEAD|PUT|DELETE)) (?P<URL>.*?) (?P<version>HTTP/1.1)'
         er_linea_peticion = re.compile(patron_linea_peticion)
         match_linea_peticion = er_linea_peticion.match(str_linea_peticion)
         if match_linea_peticion:
@@ -143,31 +162,30 @@ def split_message(message):
 
 def is_HTTP_correct(peticion):
     """Comprueba si la peticion HTTP es correcta"""
-    return peticion != None and peticion['version'] == VERSION
+    return peticion != None
 
 
-def is_valid_method(linea_peticion):
+def is_valid_method(linea_peticion, body):
     """Comprobar si la petición HTTP es correcta: Método, URL+Recurso y Versión HTTP"""
-    metodo = linea_peticion['method']
-    return metodo in valid_methods
+    return ((linea_peticion["method"] == "GET") and (body == "")) or ((linea_peticion["method"] == "POST") and (body != ""))
 
 
 def comprobar_Host(headers):
     return "Host" in headers
 
 
-def get_ruta_recurso(url):
+def get_ruta_recurso(webroot, url):
     """Obtener la ruta del recurso solicitado por el cliente: index o cualquier otro"""
-    if url == "/":
-        return "/index.html"
+    if (url == "/"):
+        return webroot + html["index"]
     else:
-        return url
+        return webroot + url    
         
 
 def get_email(body):
-    patron_email = r'email=(?P<email>.*?)'
+    patron_email = r'email=(?P<email>.+)(?=(&| |\r\n|))'
     er_email = re.compile(patron_email)
-    match_email = er_email.fullmatch(body)
+    match_email = er_email.match(body)
     if match_email:
         return match_email.group('email')
     else:
@@ -180,7 +198,7 @@ def create_response(version, status, headers, data):
     linea_peticion = "{} {}\r\n".format(version, status)
     cabeceras = ""
     # Añado las básicas
-    for cabecera in standart_resposne_headers:
+    for cabecera in standart_response_headers:
         cabeceras = cabeceras + "{}: {}\r\n".format(cabecera, headers[cabecera])
         del headers[cabecera]
     # Añado las que me queden
@@ -194,19 +212,26 @@ def enviar_recurso(cs, version, status, ruta_recurso, cookie = -1):
     fichero = os.path.basename(ruta_recurso)
     (fichero, separador, extension_fichero) = fichero.partition('.')
     with open(ruta_recurso, "rb",) as recurso:
-                # Relleno las cabeceras básicas
-                cabeceras_respuestas = {"Server": "webservidor", "Content-Type": filetypes[extension_fichero] if extension_fichero in filetypes else filetypes["text"], "Content-Length": tam_fichero, "Date": datetime.utcnow().strftime('%a, %d %b %Y %H:%M:%S GMT'), "Connection": "keep-alive", "Keep-Alive": TIMEOUT_CONNECTION}
-                # En caso de tener que mandar la cookie, se añade
-                if cookie != -1:
-                    cabeceras_respuestas["Set-Cookie"] = "{}={}; Max-Age={}".format(NOMBRE_COOKIE, cookie, TIMEOUT_COOKIE)
-                datos_leidos = recurso.read(BUFSIZE)
-                mensaje = create_response(version, status, cabeceras_respuestas, datos_leidos)
-                enviar_mensaje(cs, mensaje)
-                # Si aún quedan datos por mandar, se mandarán ahora en el bucle
-                datos_leidos = recurso.read(BUFSIZE)
-                while datos_leidos != b"" :
-                    enviar_mensaje(cs, datos_leidos)
-                    datos_leidos = recurso.read(BUFSIZE)
+        # Relleno las cabeceras básicas
+        cabeceras_respuestas = {"Server": SERVER_NAME,
+                                "Content-Type": filetypes[extension_fichero] if extension_fichero in filetypes else filetypes["text"],
+                                "Content-Length": tam_fichero, 
+                                "Date": datetime.utcnow().strftime('%a, %d %b %Y %H:%M:%S GMT'), 
+                                "Connection": "keep-alive", 
+                                "Keep-Alive": TIMEOUT_CONNECTION}
+        # En caso de tener que mandar la cookie, se añade
+        if cookie != -1:
+            cabeceras_respuestas["Set-Cookie"] = "{}={}; Max-Age={}".format(NOMBRE_COOKIE, cookie, TIMEOUT_COOKIE)
+        datos_leidos = recurso.read(BUFSIZE)
+        mensaje = create_response(version, status, cabeceras_respuestas, datos_leidos)
+        enviar_mensaje(cs, mensaje)
+        # Si aún quedan datos por mandar, se mandarán ahora en el bucle
+        datos_leidos = recurso.read(BUFSIZE)
+        while datos_leidos != b"" :
+            enviar_mensaje(cs, datos_leidos)
+            datos_leidos = recurso.read(BUFSIZE)
+    logger.info("Respuesta enviada")
+                    
 
 def process_web_request(cs, webroot, cliente):
     """ Procesamiento principal de los mensajes recibidos.
@@ -244,7 +269,7 @@ def process_web_request(cs, webroot, cliente):
                 * NOTA: Si hay algún error, enviar una respuesta de error con una pequeña página HTML que informe del error.
     """
     peticiones = 0
-    while peticiones <= MAX_PETICIONES:
+    while peticiones < MAX_PETICIONES:
         (rlist, wlist, xlist) = select.select([cs],[],[], TIMEOUT_CONNECTION)
         if not rlist:
             cerrar_conexion(cs)
@@ -253,27 +278,30 @@ def process_web_request(cs, webroot, cliente):
         else:
             peticiones = peticiones + 1
             logger.info("Procesando petición del cliente {}".format(cliente))
+            logger.debug("Número de petición: {}".format(peticiones))
             datos = recibir_mensaje(cs)
             (linea_peticion, headers, body) = split_message(datos)
-            if not is_HTTP_correct(linea_peticion): # Meter aquí lo de comprobar el Host????
+            if not is_HTTP_correct(linea_peticion): 
                 """Enviar un 400 """
                 logger.error("Peticion mal formada")
-                enviar_recurso(cs, VERSION, ERROR_400, webroot + "/Errores/error_400.html") 
+                enviar_recurso(cs, VERSION, ERROR_400, webroot + html["400"]) 
                 continue
-            if not is_valid_method(linea_peticion):
+            if not is_valid_method(linea_peticion, body):
                 """Enviar un 405"""
-                logger.error("Metodo invalido en la petición")
-                enviar_recurso(cs, VERSION, ERROR_405, webroot + "/Errores/error_405.html") 
+                logger.error("Metodo invalido ({}) en la petición".format(linea_peticion["method"]))
+                enviar_recurso(cs, VERSION, ERROR_405, webroot + html["405"]) 
                 continue
-            comprobar_Host(headers)
+            if comprobar_Host(headers):
+                logger.info("Se ha incluido la cabecera Host")
+            logger.debug("Línea de petición: {} {} {}".format(linea_peticion["method"], linea_peticion["URL"], linea_peticion["version"]))
             # Escribir cabeceras en el log
             for cabecera in headers:
                 logger.info('{}: {}'.format(cabecera, headers[cabecera]))
-            ruta_recurso = webroot + get_ruta_recurso(linea_peticion["URL"]) # Nada de eliminar parametros porque no se permiten los get de escuestas???
+            ruta_recurso = get_ruta_recurso(webroot, linea_peticion["URL"]) 
             if not os.path.isfile(ruta_recurso):
                 "Devolver 404"
                 logger.error("Archivo {} no encontrado".format(ruta_recurso))
-                enviar_recurso(cs, VERSION, ERROR_404, webroot + "/Errores/error_404.html") 
+                enviar_recurso(cs, VERSION, ERROR_404, webroot + html["404"]) 
                 continue
             logger.info("Sirviendo archivo {}".format(ruta_recurso))
             cookie_nesaria = False
@@ -283,15 +311,16 @@ def process_web_request(cs, webroot, cliente):
                 if cookie_counter == MAX_ACCESOS:
                     "devolver 403"
                     logger.error("Numero máximo de accesos al index.html excedido")
-                    enviar_recurso(cs, VERSION, ERROR_403, webroot + "/Errores/error_403.html") 
+                    enviar_recurso(cs, VERSION, ERROR_403, webroot + html["403"]) 
                     break
             # Distinguir entre GET y POST
             if linea_peticion["method"] == "POST":
                 email = get_email(body)
+                logger.debug("Email indicado en el formulario: {}".format(email))
                 if not (email in valid_emails):
                     "Devolver 401"
-                    logger.error("Persona no autorizada")
-                    enviar_recurso(cs, VERSION, ERROR_401, webroot + "/Errores/error_401.html") 
+                    logger.error("Persona no autorizada ({})".format(email))
+                    enviar_recurso(cs, VERSION, ERROR_401, webroot + html["401"]) 
                     continue
             # Enviar un recurso por la red
             enviar_recurso(cs, linea_peticion['version'], RESPONSE_OK, ruta_recurso, cookie_counter if cookie_nesaria else -1)
@@ -317,6 +346,9 @@ def main():
         print(args.host, args.port)
         if args.verbose:
             logger.setLevel(logging.DEBUG)
+        # Comprobamos si se ha pasado como webroot una estructura de la forma: /../../ y en ese caso quitamos el último /
+        if (args.webroot[len(args.webroot)-1] == "/"):
+            args.webroot = args.webroot[:len(args.webroot)-1]
         logger.info('Enabling server in address {} and port {}.'.format(args.host, args.port))
         logger.info("Serving files from {}".format(args.webroot))
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM, proto = 0) as server_socket:
