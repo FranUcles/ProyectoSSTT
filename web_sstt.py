@@ -81,29 +81,39 @@ def enviar_mensaje(cs, data):
     """ Esta función envía datos (data) a través del socket cs
         Devuelve el número de bytes enviados.
     """    
-    bytes_snd = cs.send(data)                                           # Los datos ya están codificados en bytes, por lo que no necesitamos una codificación extra
-        
-    if (bytes_snd == 0):
-        logger.error("Error al tratar de enviar datos por el socket, cerramos la conexión")  
+    try:
+        bytes_snd = cs.send(data)                                           # Los datos ya están codificados en bytes, por lo que no necesitamos una codificación extra
+            
+        if (bytes_snd == 0):
+            logger.error("Error al tratar de enviar datos por el socket, cerramos la conexión")  
+            cerrar_conexion(cs)
+            sys.exit(1)
+                            
+        return bytes_snd                                                    # Devolvemos el nº de bytes enviados
+    except Exception:
+        logger.error("Se produjo una excepción al usar el socket para enviar datos. Cerramos la conexión")
         cerrar_conexion(cs)
         sys.exit(1)
-                           
-    return bytes_snd                                                    # Devolvemos el nº de bytes enviados
 
 
 def recibir_mensaje(cs):
     """ Esta función recibe datos a través del socket cs
         Leemos la información que nos llega. recv() devuelve un string con los datos.
     """
-    datos_rcv = cs.recv(BUFSIZE)                                        # Lee los datos que se encuentran en el socket
-    
-    """Tratar errores fallidos"""
-    if (not datos_rcv):
-        logger.error("Error al tratar de recibir datos por el socket, cerramos la conexión")  
+    try:
+        datos_rcv = cs.recv(BUFSIZE)                                        # Lee los datos que se encuentran en el socket
+        
+        """Tratar errores fallidos"""
+        if (not datos_rcv):
+            logger.error("Error al tratar de recibir datos por el socket, cerramos la conexión")  
+            cerrar_conexion(cs)
+            sys.exit(1)
+        
+        return datos_rcv.decode()                                           # Devolvemos los datos recibidos del socket convertidos a string
+    except Exception:
+        logger.error("Se produjo una excepción al usar el socket para recibir datos. Cerramos la conexión")
         cerrar_conexion(cs)
         sys.exit(1)
-    
-    return datos_rcv.decode()                                           # Devolvemos los datos recibidos del socket convertidos a string
     
     # pass                                                              # Se utiliza cuando las funciones están vacías para que no de errores
 
