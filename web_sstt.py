@@ -61,6 +61,7 @@ valid_emails = ["ja.lopezsola%40um.es", "f.uclesayllon%40um.es"]      # El @ se 
 headers = {"vers":"HTTP/1.1 {}\r\n", "server":"Server: {}\r\n", "cont-ty":"Content-Type: {}\r\n", "cont-lng":"Content-Length: {}\r\n",
            "date":"Date: {}\r\n", "conn":"Connection: {}\r\n", "cookie":"Set-Cookie: {}={}; Max-Age={}\r\n", "keep":"Keep-Alive: timeout={}, max={}\r\n"}
 
+# Ficheros html usados en respuestas
 html = {"index":"/index.html", "mail":"/accion_form.html", "400":"/Errores/error_400.html", "401":"/Errores/error_401.html", "403":"/Errores/error_403.html",
         "404":"/Errores/error_404.html","405":"/Errores/error_405.html"}
 
@@ -231,21 +232,6 @@ def get_email(body):
     # ¡Importante, puede devolver el valor None!
     return email
 
-
-def leer_recurso(recurso):
-    """Obtener los datos que contiene un recurso. El valor devuelto será en bytes"""
-        
-    with open(recurso, "rb",) as rec:
-        datos_recurso = rec.read(BUFSIZE)
-        datos_leidos = datos_recurso                                
-        
-        while (datos_leidos != b""):
-            datos_leidos = rec.read(BUFSIZE)
-            datos_recurso = datos_recurso + datos_leidos
-    
-    return datos_recurso
-
-
 def obtener_extension (ruta_recurso):
     fichero = os.path.basename(ruta_recurso)                        # Nos devuelve el nombre en forma: (nombre.extensión)
     componentes_fichero = fichero.split(".")                        # Obtenemos una lista de la forma: (nombre, extensión)
@@ -344,7 +330,7 @@ def process_web_request(cs, webroot):
                     * Preparar respuesta con código 200. Construir una respuesta que incluya: la línea de respuesta y   -> Lo hacemos con create_response_ok
                       las cabeceras Date, Server, Connection, Set-Cookie (para la cookie cookie_counter),
                       Content-Length y Content-Type.
-                    * Leer y enviar el contenido del fichero a retornar en el cuerpo de la respuesta.                   -> Lo hacemos con leer_recurso
+                    * Leer y enviar el contenido del fichero a retornar en el cuerpo de la respuesta.                   
                     * Se abre el fichero en modo lectura y modo binario
                         * Se lee el fichero en bloques de BUFSIZE bytes (8KB)
                         * Cuando ya no hay más información para leer, se corta el bucle
@@ -423,7 +409,7 @@ def process_web_request(cs, webroot):
                 
                 if (cookie_counter == NO_VALID_VALUE):
                     """Enviar un 403"""
-                    logger.info("Se ha excedido el número máximo de accesos ({}) al recurso index.html, debe esperar 2 "
+                    logger.error("Se ha excedido el número máximo de accesos ({}) al recurso index.html, debe esperar 2 "
                                 "minutos desde su última petición. Cerraremos la conexión mientras tanto".format(MAX_ACCESOS))
                     ruta_recurso = webroot + html["403"]
                     response = create_response_error(ERROR_MESSAGE_403, ruta_recurso, num_peticiones, CLOSE_CONNECTION)
