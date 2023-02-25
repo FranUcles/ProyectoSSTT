@@ -17,7 +17,7 @@ import regex as re                                                      # Para u
 
 
 BUFSIZE = 8192                                                          # Tamaño máximo del buffer que se puede utilizar
-TIMEOUT_CONNECTION = 60                                                 # Timout para la conexión persistente: 1 + 7 + 4 + 0 + 20 = 22
+TIMEOUT_CONNECTION = 22                                                 # Timout para la conexión persistente: 1 + 7 + 4 + 0 + 20 = 22
 MAX_ACCESOS = 10                                                        # Nº máximo de accesos al recurso index.html
 MAX_PETICIONES = 30                                                     # Nº máximo de peticiones del cliente al servidor
 MIN_COOKIE_VALUE = 1                                                    # Valor mínimo de un cookie-counter
