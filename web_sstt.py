@@ -12,7 +12,6 @@ import time                                                             # Timeou
 import sys                                                              # sys.exit
 import re                                                               # Analizador sintáctico
 import logging                                                          # Para imprimir logs
-import regex as re                                                      # Para usar expresiones regualres
 
 
 
