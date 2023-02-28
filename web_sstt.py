@@ -12,7 +12,7 @@ import time                                                 # Timeout conexión
 import sys                                                  # sys.exit
 import re                                                   # Analizador sintáctico
 import logging                                              # Para imprimir logs
-import regex as re                                          # Para usar expresiones regualres
+import re                                                   # Para usar expresiones regualres
 
 
 BUFSIZE = 8192                                              # Tamaño máximo del buffer que se puede utilizar
