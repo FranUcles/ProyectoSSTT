@@ -17,7 +17,7 @@ import regex as re                                          # Para usar expresio
 
 BUFSIZE = 8192                                              # Tamaño máximo del buffer que se puede utilizar
 TIMEOUT_CONNECTION = 22                                     # Timout para la conexión persistente
-MAX_ACCESOS = 10                                            # Nº máximo de accesos al recurso index.html
+MAX_ACCESOS = 11                                            # Nº máximo de accesos al recurso index.html
 MAX_PETICIONES = 30                                         # Nº máximo de peticiones del cliente al servidor
 RESPONSE_OK = "200 OK"
 ERROR_400 = "400 Bad Request"
@@ -27,6 +27,9 @@ ERROR_404 = "404 Not Found"
 ERROR_405 = "405 Method Not Allowed"
 
 MIN_COOKIE_VALUE = 1                                        # Valor mínimo de un cookie-counter
+
+# Nombre del servidor
+SERVER_NAME = "web.serviciostelematicos1740.org"
 
 NOMBRE_COOKIE = "cookie_counter_1740"
 TIMEOUT_COOKIE = 120
@@ -97,7 +100,7 @@ def process_cookies(headers,  cs):
         if match_cookie_counter:
             cookie_counter = header_cookie[match_cookie_counter.start():match_cookie_counter.end()]     # Nos quedamos con el string perteneciente a cookie-counter
             value_cookie_counter = int(cookie_counter)            
-            if (value_cookie_counter >= MIN_COOKIE_VALUE and value_cookie_counter < MAX_ACCESOS):
+            if (value_cookie_counter >= MIN_COOKIE_VALUE and value_cookie_counter <= MAX_ACCESOS):
                 new_value_cookie = value_cookie_counter + 1
                 return new_value_cookie
             else:
