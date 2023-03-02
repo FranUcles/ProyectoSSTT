@@ -254,7 +254,7 @@ def headers_response_comunes(codigo_resp, extension, tam_body, num_pet, close = 
         response = response + headers["conn"].format("Keep-Alive") 
         # Solo enviamos las condiciones de keep-alive la primera vez
         if (num_pet == 1):
-            response = response + headers["keep"]. format(TIMEOUT_CONNECTION, MAX_PETICIONES)
+            response = response + headers["keep"].format(TIMEOUT_CONNECTION, MAX_PETICIONES)
     else:
         response = response + headers["conn"].format("close")
     
