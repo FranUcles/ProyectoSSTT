@@ -75,13 +75,7 @@ def enviar_mensaje(cs, data):
         Devuelve el número de bytes enviados.
     """
     try:
-        sent_bytes = cs.send(data)
-        
-        if (sent_bytes == 0):
-            logger.error("Error al tratar de enviar datos por el socket, cerramos la conexión")  
-            cerrar_conexion(cs)
-            sys.exit(1)
-        
+        sent_bytes = cs.send(data)        
         return sent_bytes
     except Exception:
         """ Tratar el envio fallido"""
@@ -96,7 +90,6 @@ def recibir_mensaje(cs):
     """
     try:
         datos_rcv = cs.recv(BUFSIZE)                            # Lee los datos que se encuentran en el socket
-        
         return datos_rcv.decode()                               # Devolvemos los datos recibidos del socket convertidos a string
     except Exception:
         logger.error("Se produjo una excepción al usar el socket para recibir datos. Cerramos la conexión")
@@ -298,7 +291,7 @@ def process_web_request(cs, webroot, cliente):
             * Si es por timeout, se cierra el socket tras el período de persistencia.
                 * NOTA: Si hay algún error, enviar una respuesta de error con una pequeña página HTML que informe del error.
     """
-    cookie_counter = NO_VALID_VALUE  
+    cookie_counter = NO_VALID_VALUE
     peticiones = 0
     while peticiones < MAX_PETICIONES:
         (rlist, wlist, xlist) = select.select([cs],[],[], TIMEOUT_CONNECTION)
