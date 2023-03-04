@@ -97,11 +97,6 @@ def recibir_mensaje(cs):
     try:
         datos_rcv = cs.recv(BUFSIZE)                            # Lee los datos que se encuentran en el socket
         
-        if (not datos_rcv):
-            logger.error("Error al tratar de recibir datos por el socket, cerramos la conexión")  
-            cerrar_conexion(cs)
-            sys.exit(1)
-        
         return datos_rcv.decode()                               # Devolvemos los datos recibidos del socket convertidos a string
     except Exception:
         logger.error("Se produjo una excepción al usar el socket para recibir datos. Cerramos la conexión")
