@@ -16,13 +16,11 @@ import logging                                              # Para imprimir logs
 BUFSIZE = 8192                                              # Tamaño máximo del buffer que se puede utilizar
 TIMEOUT_CONNECTION = 22                                     # Timout para la conexión persistente
 
-#¿Está bien cambiar a 11?
 MAX_ACCESOS = 11                                            # Nº máximo de accesos al recurso index.html
 MAX_PETICIONES = 30                                         # Nº máximo de peticiones del cliente al servidor
 MIN_COOKIE_VALUE = 1                                        # Valor mínimo de un cookie-counter
 NO_VALID_VALUE = 0                                          # Valor no válido de la cookie
-CLOSE_CONNECTION = 1                                        # Valor para indicar que cuando excedamos las 10 peticiones al index.html hay que enviar un
-                                                            # close en la respuesta
+
 # Códigos a devolver en los HTTP response
 ACCEPT_CODE = "200 OK"
 ERROR_MESSAGE_400 = "400 Bad Request"
