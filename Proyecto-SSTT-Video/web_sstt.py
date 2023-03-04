@@ -52,7 +52,7 @@ valid_emails = ["ja.lopezsola%40um.es", "f.uclesayllon%40um.es"]
 
 # Cabeceras a enviar en respuesta
 headers = {"vers":"HTTP/1.1 {}\r\n", "server":"Server: {}\r\n", "cont-ty":"Content-Type: {}\r\n", "cont-lng":"Content-Length: {}\r\n",
-           "date":"Date: {}\r\n", "conn":"Connection: {}\r\n", "cookie":"Set-Cookie: {}={}; Max-Age={}\r\n", "keep":"Keep-Alive: timeout={}, max={}\r\n"}
+           "date":"Date: {}\r\n", "conn":"Connection: {}\r\n", "cookie":"Set-Cookie: {}={}; Max-Age={}\r\n", "keep":"Keep-Alive: timeout={}\r\n"}
 
 
 
@@ -221,7 +221,7 @@ def headers_response_comunes(codigo_resp, extension, tam_body):
     # Construimos el mensaje
     response = (headers["vers"].format(codigo_resp) + headers["server"].format(SERVER_NAME) + headers["cont-ty"].format(type_fich) 
                 + headers["cont-lng"].format(tam_body) + headers["date"].format(datetime.utcnow().strftime('%a, %d %b %Y %H:%M:%S GMT')) 
-                + headers["conn"].format("Keep-Alive") + headers["keep"]. format(TIMEOUT_CONNECTION, MAX_PETICIONES))
+                + headers["conn"].format("Keep-Alive") + headers["keep"]. format(TIMEOUT_CONNECTION))
     
     return response
 
