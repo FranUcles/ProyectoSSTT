@@ -221,7 +221,7 @@ def headers_response_comunes(codigo_resp, extension, tam_body):
     # Construimos el mensaje
     response = (headers["vers"].format(codigo_resp) + headers["server"].format(SERVER_NAME) + headers["cont-ty"].format(type_fich) 
                 + headers["cont-lng"].format(tam_body) + headers["date"].format(datetime.utcnow().strftime('%a, %d %b %Y %H:%M:%S GMT')) 
-                + headers["conn"].format("Keep-Alive") + headers["keep"]. format(TIMEOUT_CONNECTION))
+                + headers["conn"].format("Keep-Alive") + headers["keep"].format(TIMEOUT_CONNECTION))
     
     return response
 
