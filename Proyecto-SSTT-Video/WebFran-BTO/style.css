@@ -1,0 +1,211 @@
+header{
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+#logo{
+    width: 300px;
+    height: 200px;
+}
+.otroestilo{
+    color: #5600ac;
+    font-size: 80px;
+}
+.menu{
+    background-color: #404142;
+    color: white;
+    display: flex;
+    flex-direction: row;
+    margin: 0px;
+    padding: 0px;
+    height: auto;
+    flex-wrap: wrap;
+}
+li{
+    padding: 10px;
+    list-style: none;
+    font-size: 20px;
+    padding-left: 20px;
+    padding-right: 20px; 
+}
+li:hover {
+    background: #818181;
+}
+
+ul li a {
+    color: white;
+    text-decoration: none;
+    margin-top: 30px;
+}
+#active{
+    background-color: #350098;
+}
+.cuerpo{
+    display: flex;
+    flex-direction: row;
+    background: -webkit-linear-gradient(top, rgb(159, 207, 255),#6e5cff, #ff97ff, #bdf2ff , white);
+}
+.centro{
+    width: 50%;
+    background: none;
+}
+.lateral{
+    margin-top: 10px;
+    width: 50%;
+    display: flex;
+    flex-direction: column;
+    border-style: groove;
+    border-radius: 50px;
+    border-color: black;
+}
+#lateralizquierdo1{
+    height: 1900px;
+}
+#lateralizquierdo2{
+    height: 550px;
+}
+#lateralizquierdo3{
+    height: 600px;
+}
+#central{
+    width: 100%;
+    flex-direction: column;
+}
+.encabezados{
+    text-align: center;
+    text-decoration: underline;
+    font-size: 30px;
+}
+
+.informacion{
+    display: inline;
+}
+#piano{
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+#cartatitulo{
+    shape-outside: url(The_Fosters_logo.png);
+    shape-image-threshold: 0.5;
+    shape-margin: 20px;
+    float: left;
+    margin-top: 20px;
+    margin-left: 20px;
+    margin-right: 20px;
+    height: 200px;
+}
+#mapa{
+    margin-left: 30px;
+}
+.infoapartados{
+    margin-left: 20px;
+    margin-right: 20px;
+}
+.nombres{
+    font-size: 20px;
+    text-decoration: underline;
+    margin-left: 20px;
+}
+.fotos{
+    shape-image-threshold: 0.5;
+    shape-margin: 20px;
+    margin-left: 20px;
+    margin-right: 20px;
+    margin-bottom: 10px;
+}
+#lena{
+    height: 200px;
+    float: right;
+}
+#stef{
+    height: 200px;
+    float: left;
+}
+#jesus{
+    margin-left: 100px;
+    width: 500px;
+}
+#mariana{
+    float: left;
+    height: 300px;
+}
+#jude{
+    margin-left: 120px;
+    height: 350px;
+}
+#mike{
+    float: right;
+}
+#callie{
+    margin-top: 20px;
+    height: 350px;
+    float: right;
+}
+#brandon{
+    margin-left: 250px;
+}
+#detenido{
+    margin-left: 50px;
+}
+#brallie1{
+    color: blue;
+}
+#calliebrandon{
+    margin-left: 90px;
+    width: 600px;
+}
+#brandonpiano{
+    width: 500px;
+}
+#mikebrandon{
+    width: 700px;
+}
+#calliebrandonpequeña{
+    float: left;
+    width: 300px;
+}
+#brallieboda{
+    float: right;
+    height: 400px;
+}
+footer{
+    background-color: #404142;
+    color: white;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}
+.izquierda{
+    margin-left: 50px;
+    width: 500px;
+}
+.derecha{
+    width: 875px;
+    display: flex;
+}
+.foto2{
+    margin-top: 20px;
+    margin-right: 60px;
+    width: 400px;
+    height: 200px;
+}
+p a{
+    color: #00ebff
+}
+.redes{
+    width: 350px;
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+}
+.logos{
+    height: 50px;
+    width: 50px;
+}
+#youtube{
+    width: 70px;
+}
+#twitter{
+    width: 90px;
+}
