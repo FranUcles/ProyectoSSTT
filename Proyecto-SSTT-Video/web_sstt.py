@@ -126,7 +126,7 @@ def process_cookies(headers):
         
 def split_message(message):
     """Esta función separa la linea de petición de las cabeceras del cuerpo"""
-    patron_separador = r'(?P<peticion>.*?)\r\n(?P<cabeceras>(.|\r\n)*?)\r\n\r\n(?P<cuerpo>.*)'
+    patron_separador = r'(?P<peticion>.*?)\r\n(?P<contenido>(?P<cabeceras>(.|\r\n)*?)\r\n\r\n(?P<cuerpo>.*))?'
     er_separador = re.compile(patron_separador)
     match_mensaje = er_separador.match(message)
     if (match_mensaje):
@@ -144,6 +144,9 @@ def split_message(message):
             logger.error("La linea de peticion es incorrecta")
             return (None, None, None)
         # Separo las cabeceras
+        if match_mensaje.group('contenido') is None:
+            logger.debug("Solo hay contenido en la linea de petición")
+            return (linea_peticion, None, None)
         str_cabeceras = match_mensaje.group('cabeceras')
         cabeceras = {}
         patron_cabeceras = r'(?P<cabecera>.*?): (?P<valor>.*?)\r\n'
