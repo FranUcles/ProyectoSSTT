@@ -84,11 +84,14 @@ def enviar_mensaje(cs, data):
     try:
         bytes_snd = cs.send(data)                                           # Los datos ya están codificados en bytes, 
                                                                             # por lo que no necesitamos una codificación extra
-            
+                                                                            
+        """
+        Esta comprobación debería aparecer pero el profesor no sabe bien como gestionarla, en un programa más profundo     
         if (bytes_snd == 0):
             logger.error("Error al tratar de enviar datos por el socket, cerramos la conexión")  
             cerrar_conexion(cs)
             sys.exit(1)
+        """
                             
         return bytes_snd                                                    # Devolvemos el nº de bytes enviados
     except Exception:
@@ -106,7 +109,7 @@ def recibir_mensaje(cs):
         
         """Tratar errores fallidos"""
         if (not datos_rcv):
-            logger.error("Error al tratar de recibir datos por el socket, cerramos la conexión")  
+            logger.error("Mensaje vacío recibido, cerramos la conexión")  
             cerrar_conexion(cs)
             sys.exit(1)
         
@@ -249,7 +252,19 @@ def headers_response_comunes(codigo_resp, extension, tam_body, num_pet, close = 
     # Construimos el mensaje
     response = (headers["vers"].format(codigo_resp) + headers["server"].format(SERVER_NAME) + headers["cont-ty"].format(type_fich) 
                 + headers["cont-lng"].format(tam_body) + headers["date"].format(datetime.utcnow().strftime('%a, %d %b %Y %H:%M:%S GMT')) )
-      
+    
+    """
+    Tenemos dos opciones para actuar en la parte final de la construcción del mensaje:
+    1. Enviar la cabecera keep-alive constantemente. En ese caso el campo MAX_Peticiones hay que decrementarlo con cada envío
+    2. Enviar la cabecera keep-alive solo en la primera petición del cliente, en ese caso con enviar cada cosa tal cual está es suficiente
+    
+    El close es para que el cliente indique en su respuesta http que va a cerrar la conexión
+    
+    En la versión final del programa hemos decidio enviar constantemente la cabecera keep-alive pues así lo especificaba la práctica, pero
+    sin el campo max_peticiones y sin enviar nunca el close en la cabecera connection.
+    No obstante, dejo ilustrada en mi versión cómo se haría lo descrito antes
+    """
+    
     if (close == 0):
         response = response + headers["conn"].format("Keep-Alive") 
         # Solo enviamos las condiciones de keep-alive la primera vez
