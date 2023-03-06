@@ -90,6 +90,10 @@ def recibir_mensaje(cs):
     """
     try:
         datos_rcv = cs.recv(BUFSIZE)                            # Lee los datos que se encuentran en el socket
+        if (not datos_rcv):
+            logger.error("Mensaje vacío, cerramos la conexión")  
+            cerrar_conexion(cs)
+            sys.exit(1)
         return datos_rcv.decode()                               # Devolvemos los datos recibidos del socket convertidos a string
     except Exception:
         logger.error("Se produjo una excepción al usar el socket para recibir datos. Cerramos la conexión")
@@ -238,7 +242,6 @@ def create_response_ok(linea_peticion, extension, cookie_counter, tam_body):
     if ( (linea_peticion["method"] == "GET") and (linea_peticion["URL"] == "/") ):
         # En Set-Cookie hay que poner cookie_counter_1740 y Max-Age solo se envía si es pertinente (no hay que enviarlo constantemente o la cookie no expirará)
         response = response + headers["cookie"].format(NOMBRE_COOKIE, cookie_counter, TIMEOUT_COOKIE)
-    
     response = response + "\r\n"
     return response.encode()                                               # Lo devolvemos en bytes    
 
@@ -249,13 +252,10 @@ def send_response (cs, response, recurso):
         datos_recurso = rec.read(BUFSIZE)
         datos_leidos = response + datos_recurso 
         enviar_mensaje(cs, datos_leidos)    
-        
-        datos_leidos = rec.read(BUFSIZE)
-                                   
+        datos_leidos = rec.read(BUFSIZE)                         
         while (datos_leidos != b""):
             enviar_mensaje(cs, datos_leidos)
             datos_leidos = rec.read(BUFSIZE)
-        
         logger.info("Respuesta enviada")
                     
 
