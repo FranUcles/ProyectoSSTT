@@ -90,7 +90,7 @@ def recibir_mensaje(cs):
     """
     try:
         datos_rcv = cs.recv(BUFSIZE)                            # Lee los datos que se encuentran en el socket
-        if (not datos_rcv):
+        if (len(datos_rcv) == 0):
             logger.error("Mensaje vacío, cerramos la conexión")  
             cerrar_conexion(cs)
             sys.exit(1)
@@ -297,7 +297,7 @@ def process_web_request(cs, webroot, cliente):
     cookie_counter = NO_VALID_VALUE
     peticiones = 0
     while peticiones < MAX_PETICIONES:
-        (rlist, wlist, xlist) = select.select([cs],[],[], TIMEOUT_CONNECTION)
+        (rlist, wlist, xlist) = select.select([cs],[],[], TIMEOUT_CONNECTION - 1) # Evitar la condición de carrera
         if not rlist:
             cerrar_conexion(cs)
             logger.info("Conexión persistente del cliente {} finalizada".format(cliente))
